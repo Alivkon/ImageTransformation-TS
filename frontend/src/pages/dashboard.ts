@@ -1,0 +1,71 @@
+import type { User, Generation } from "../types.js";
+import { getGenerations } from "../api.js";
+
+type Navigate = (page: string) => void;
+
+function renderRecentGallery(gens: Generation[], navigate: Navigate): void {
+  const grid = document.getElementById("recent-gallery");
+  if (!grid) return;
+
+  if (gens.length === 0) {
+    grid.innerHTML = `
+      <div class="gallery-empty">
+        <p>📸 У вас ещё нет генераций</p>
+        <p>Начните с загрузки фото</p>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = gens
+    .slice(0, 6)
+    .map((g) => {
+      if (g.status !== "completed" || !g.result_file_id) {
+        return `
+          <div class="gallery-item gallery-item-${g.status}">
+            <div class="gallery-status">${g.status === "processing" ? "⏳" : "❌"}</div>
+            <div class="gallery-prompt">${g.prompt.slice(0, 40)}…</div>
+          </div>`;
+      }
+      return `
+        <div class="gallery-item">
+          <img src="/uploads/${g.result_file_id}" alt="Result" loading="lazy">
+          <div class="gallery-prompt">${g.prompt.slice(0, 40)}…</div>
+        </div>`;
+    })
+    .join("");
+
+  grid.querySelectorAll(".gallery-item").forEach((item, idx) => {
+    item.addEventListener("click", () => {
+      const gen = gens[idx];
+      if (gen && gen.status === "completed") navigate("results");
+    });
+  });
+}
+
+export async function initDashboard(user: User, navigate: Navigate): Promise<void> {
+  const balance = document.getElementById("balance");
+  const freeGens = document.getElementById("free-generations");
+  const totalGens = document.getElementById("total-generations");
+
+  if (balance) balance.textContent = `${user.balance.toFixed(0)}₽`;
+  if (freeGens) freeGens.textContent = String(user.free_generations);
+  if (totalGens) totalGens.textContent = String(user.total_generations);
+
+  const howToBtn = document.getElementById("how-to-btn");
+  const howToSection = document.getElementById("how-to-section");
+  howToBtn?.addEventListener("click", () => {
+    if (!howToSection) return;
+    howToSection.style.display = howToSection.style.display === "none" ? "block" : "none";
+  });
+
+  // Nav button on the dashboard to go to wallet
+  document.querySelector<HTMLButtonElement>('[data-page="wallet"]')
+    ?.addEventListener("click", () => navigate("wallet"));
+
+  try {
+    const gens = await getGenerations(0, 6);
+    renderRecentGallery(gens, navigate);
+  } catch {
+    // non-critical
+  }
+}
