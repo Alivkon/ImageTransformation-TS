@@ -10,15 +10,21 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # Закомментируй для доступа только внутри сети
+    ports:
+      - "5433:5432"
     networks:
-      - n8n_default
+      - imagetransformer_net
 
   bot:
     build: .
     image: imagetransformationtgbot-ts
-    container_name: imagetransformationtgbot
+    container_name: imagetransformationtgbot_ts
     restart: unless-stopped
     env_file: .env
+    environment:
+      # Переопределяем DATABASE_URL внутри контейнера — используем имя сервиса, не localhost
+      DATABASE_URL: postgresql://imagetransformer:${POSTGRES_PASSWORD}@postgre_imagetransformer/imagetransformer
     expose:
       - "8080"
     depends_on:
@@ -26,6 +32,7 @@ services:
     volumes:
       - uploads_data:/app/uploads
     networks:
+      - imagetransformer_net
       - n8n_default
     labels:
       - "traefik.enable=true"
@@ -40,5 +47,6 @@ volumes:
   uploads_data:
 
 networks:
+  imagetransformer_net:
   n8n_default:
     external: true

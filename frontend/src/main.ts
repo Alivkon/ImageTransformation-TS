@@ -6,7 +6,7 @@ import type { GenerationResult } from "./pages/generate.js";
 import { initResults } from "./pages/results.js";
 import { initGallery } from "./pages/gallery.js";
 import { initWallet } from "./pages/wallet.js";
-import { getMe, login, register, logout } from "./api.js";
+import { getMe, login, register, logout, setToken, resendVerification } from "./api.js";
 import type { User } from "./types.js";
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -73,6 +73,20 @@ function hideAuthOverlay(): void {
   if (header) header.style.display = "";
 }
 
+function showAuthInfo(msg: string, showResend = false): void {
+  const infoEl = document.getElementById("auth-info");
+  if (infoEl) { infoEl.textContent = msg; infoEl.style.display = "block"; }
+  const resendBtn = document.getElementById("auth-resend") as HTMLButtonElement | null;
+  if (resendBtn) resendBtn.style.display = showResend ? "block" : "none";
+}
+
+function hideAuthInfo(): void {
+  const infoEl = document.getElementById("auth-info");
+  if (infoEl) infoEl.style.display = "none";
+  const resendBtn = document.getElementById("auth-resend") as HTMLButtonElement | null;
+  if (resendBtn) resendBtn.style.display = "none";
+}
+
 function setupAuthForm(): void {
   const overlay = document.getElementById("auth-overlay");
   if (!overlay) return;
@@ -82,6 +96,7 @@ function setupAuthForm(): void {
   const submitBtn = document.getElementById("auth-submit") as HTMLButtonElement | null;
   const errorEl = document.getElementById("auth-error");
   let isRegister = false;
+  let lastEmail = "";
 
   tabLogin?.addEventListener("click", () => {
     isRegister = false;
@@ -89,6 +104,7 @@ function setupAuthForm(): void {
     tabRegister?.classList.remove("active");
     if (submitBtn) submitBtn.textContent = "Войти";
     if (errorEl) errorEl.style.display = "none";
+    hideAuthInfo();
   });
 
   tabRegister?.addEventListener("click", () => {
@@ -97,13 +113,20 @@ function setupAuthForm(): void {
     tabLogin?.classList.remove("active");
     if (submitBtn) submitBtn.textContent = "Зарегистрироваться";
     if (errorEl) errorEl.style.display = "none";
+    hideAuthInfo();
   });
 
   document.getElementById("auth-form")?.addEventListener("submit", (e) => {
     e.preventDefault();
     const email = (document.getElementById("auth-email") as HTMLInputElement).value.trim();
+    lastEmail = email;
     const password = (document.getElementById("auth-password") as HTMLInputElement).value;
     void handleAuthSubmit(email, password, isRegister, errorEl, submitBtn);
+  });
+
+  document.getElementById("auth-resend")?.addEventListener("click", () => {
+    if (!lastEmail) return;
+    void resendVerification(lastEmail).then((r) => showAuthInfo(r.message)).catch(() => undefined);
   });
 }
 
@@ -116,16 +139,24 @@ async function handleAuthSubmit(
 ): Promise<void> {
   if (submitBtn) submitBtn.disabled = true;
   if (errorEl) errorEl.style.display = "none";
+  hideAuthInfo();
 
   try {
-    const resp = isRegister ? await register(email, password) : await login(email, password);
-    currentUser = resp.user;
-    hideAuthOverlay();
-    setupApp();
-    navigate("dashboard");
+    if (isRegister) {
+      const resp = await register(email, password);
+      showAuthInfo(resp.message, true);
+    } else {
+      const resp = await login(email, password);
+      currentUser = resp.user;
+      hideAuthOverlay();
+      setupApp();
+      navigate("dashboard");
+    }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Ошибка авторизации";
     if (errorEl) { errorEl.textContent = msg; errorEl.style.display = "block"; }
+    // Если email не подтверждён — показываем кнопку повторной отправки
+    if (msg.includes("не подтверждён")) showAuthInfo("", true);
   } finally {
     if (submitBtn) submitBtn.disabled = false;
   }
@@ -163,6 +194,14 @@ function setupApp(): void {
 async function main(): Promise<void> {
   initTheme();
   setupAuthForm();
+
+  // После перехода по ссылке верификации сервер редиректит на /?session=TOKEN
+  const params = new URLSearchParams(window.location.search);
+  const sessionToken = params.get("session");
+  if (sessionToken) {
+    setToken(sessionToken);
+    window.history.replaceState({}, "", "/");
+  }
 
   try {
     currentUser = await getMe();

@@ -28,8 +28,9 @@ async function request<T>(
   const resp = await fetch(url, { ...options, headers });
 
   if (resp.status === 401) {
+    const hadToken = !!getToken();
     clearToken();
-    window.location.reload();
+    if (hadToken) window.location.reload();
     throw new Error("Unauthorized");
   }
 
@@ -41,13 +42,18 @@ async function request<T>(
 }
 
 // Auth
-export async function register(email: string, password: string): Promise<AuthResponse> {
-  const resp = await request<AuthResponse>("/api/auth/register", {
+export async function register(email: string, password: string): Promise<{ message: string }> {
+  return request<{ message: string }>("/api/auth/register", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
-  setToken(resp.token);
-  return resp;
+}
+
+export async function resendVerification(email: string): Promise<{ message: string }> {
+  return request<{ message: string }>("/api/auth/resend-verification", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
 }
 
 export async function login(email: string, password: string): Promise<AuthResponse> {

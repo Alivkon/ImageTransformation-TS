@@ -65,9 +65,21 @@ export async function initDb(): Promise<void> {
     // Web authentication
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE`);
     await client.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email
       ON users (email) WHERE email IS NOT NULL
+    `);
+
+    // Email verification tokens
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS email_verifications (
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+        token TEXT UNIQUE NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
     `);
 
     // Web sessions (Bearer token auth)
@@ -322,6 +334,7 @@ export async function getAdminPayments(limit = 50, offset = 0): Promise<Record<s
 export interface DbUserWithAuth extends DbUser {
   email: string | null;
   password_hash: string | null;
+  email_verified: boolean;
 }
 
 export async function findUserByEmail(email: string): Promise<DbUserWithAuth | null> {
@@ -375,6 +388,31 @@ export async function validateWebSession(token: string): Promise<DbUser | null> 
 
 export async function deleteWebSession(token: string): Promise<void> {
   await pool.query("DELETE FROM web_sessions WHERE token = $1", [token]);
+}
+
+export async function createEmailVerification(userId: number): Promise<string> {
+  const token = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  await pool.query("DELETE FROM email_verifications WHERE user_id = $1", [userId]);
+  await pool.query(
+    "INSERT INTO email_verifications (user_id, token, expires_at) VALUES ($1, $2, $3)",
+    [userId, token, expiresAt],
+  );
+  return token;
+}
+
+export async function consumeEmailVerification(token: string): Promise<number | null> {
+  const result = await pool.query<{ user_id: number }>(
+    `DELETE FROM email_verifications
+     WHERE token = $1 AND expires_at > NOW()
+     RETURNING user_id`,
+    [token],
+  );
+  return result.rows[0]?.user_id ?? null;
+}
+
+export async function markEmailVerified(userId: number): Promise<void> {
+  await pool.query("UPDATE users SET email_verified = TRUE WHERE user_id = $1", [userId]);
 }
 
 export async function saveUpload(

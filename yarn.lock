@@ -531,6 +531,13 @@
   dependencies:
     undici-types "~6.21.0"
 
+"@types/nodemailer@^8.0.0":
+  version "8.0.0"
+  resolved "https://registry.yarnpkg.com/@types/nodemailer/-/nodemailer-8.0.0.tgz#ea189a9c151c04cc65c8a2a4c668c65d952a24e2"
+  integrity sha512-fyf8jWULsCo0d0BuoQ75i6IeoHs47qcqxWc7yUdUcV0pOZGjUTTOvwdG1PRXUDqN/8A64yQdQdnA2pZgcdi+cA==
+  dependencies:
+    "@types/node" "*"
+
 "@types/pg@^8.11.10":
   version "8.20.0"
   resolved "https://registry.yarnpkg.com/@types/pg/-/pg-8.20.0.tgz#8bd03d3ac6b19143a8de7d66a9d13da32cd91526"
@@ -965,6 +972,11 @@ node-gyp-build@^4.8.4:
   version "4.8.4"
   resolved "https://registry.yarnpkg.com/node-gyp-build/-/node-gyp-build-4.8.4.tgz#8a70ee85464ae52327772a90d66c6077a900cfc8"
   integrity sha512-LA4ZjwlnUblHVgq0oBF3Jl/6h/Nvs5fzBLwdEF4nuxnFdsfajde4WfxtJr3CaiH+F6ewcIB/q4jQ4UzPyid+CQ==
+
+nodemailer@^8.0.7:
+  version "8.0.7"
+  resolved "https://registry.yarnpkg.com/nodemailer/-/nodemailer-8.0.7.tgz#538729a79444e538331bca8a6fc3e5c034eaebc6"
+  integrity sha512-pkjE4mkBzQjdJT4/UmlKl3pX0rC9fZmjh7c6C9o7lv66Ac6w9WCnzPzhbPNxwZAzlF4mdq4CSWB5+FbK6FWCow==
 
 on-exit-leak-free@^2.1.0:
   version "2.1.2"
