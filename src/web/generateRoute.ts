@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import type { FastifyInstance } from "fastify";
@@ -77,7 +76,7 @@ export function registerGenerateRoute(fastify: FastifyInstance, bot: Bot): void 
       try {
         const resultBytes = await generateImage(publicImageUrl, prompt);
 
-        const resultFilename = `result-${crypto.randomUUID()}.jpg`;
+        const resultFilename = `${filename.replace(/_src\.jpg$/, "")}_result.jpg`;
         const resultPath = path.join(UPLOADS_DIR, resultFilename);
         fs.writeFileSync(resultPath, resultBytes);
 
@@ -92,8 +91,6 @@ export function registerGenerateRoute(fastify: FastifyInstance, bot: Bot): void 
           )
           .catch(() => undefined);
 
-        // Cleanup source file
-        fs.unlink(localFilePath, () => undefined);
       } catch (err) {
         await failGeneration(generationId);
         if (!isFree) await addBalance(dbUser.user_id, cost);

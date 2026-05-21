@@ -31,7 +31,7 @@ export function topupAmountsKb(): InlineKeyboard {
     }
   }
 
-  kb.webApp("🌐 Оплатить через сайт", `${WEBAPP_URL}/pay_yookassa`)
+  kb.webApp("🌐 ЮMoney", `${WEBAPP_URL}/pay_yookassa`)
     .webApp("💳 Robokassa", `${WEBAPP_URL}/pay_robokassa`)
     .row()
     .text("◀️ Назад", "back_to_menu");

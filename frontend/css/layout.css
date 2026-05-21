@@ -722,6 +722,10 @@
     cursor: pointer;
     transition: all var(--transition-base);
     text-align: center;
+    appearance: none;
+    font: inherit;
+    color: inherit;
+    position: relative;
 }
 
 .topup-btn:hover,

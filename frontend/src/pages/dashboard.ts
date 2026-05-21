@@ -28,7 +28,7 @@ function renderRecentGallery(gens: Generation[], navigate: Navigate): void {
       }
       return `
         <div class="gallery-item">
-          <img src="/uploads/${g.result_file_id}" alt="Result" loading="lazy">
+          <img src="${g.result_file_id}" alt="Result" loading="lazy">
           <div class="gallery-prompt">${g.prompt.slice(0, 40)}…</div>
         </div>`;
     })

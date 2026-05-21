@@ -5,8 +5,8 @@ import { initGenerate } from "./pages/generate.js";
 import type { GenerationResult } from "./pages/generate.js";
 import { initResults } from "./pages/results.js";
 import { initGallery } from "./pages/gallery.js";
-import { initWallet } from "./pages/wallet.js";
-import { getMe, login, register, logout, setToken, resendVerification } from "./api.js";
+import { initWallet, updateWalletBalance } from "./pages/wallet.js";
+import { getMe, login, register, logout, setToken, resendVerification, sleep } from "./api.js";
 import type { User } from "./types.js";
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -14,10 +14,12 @@ import type { User } from "./types.js";
 let currentUser: User | null = null;
 let currentPage = "dashboard";
 let lastGenerationResult: GenerationResult | null = null;
+let pendingAfterAuth: (() => void) | null = null;
+let appReady = false;
 
 // ── Navigation ─────────────────────────────────────────────────────────────
 
-const PAGES = ["dashboard", "generate", "gallery", "wallet", "results"] as const;
+const PAGES = ["dashboard", "generate", "gallery", "results"] as const;
 type Page = (typeof PAGES)[number];
 
 function navigate(page: string, data?: GenerationResult): void {
@@ -43,19 +45,37 @@ function navigate(page: string, data?: GenerationResult): void {
   currentPage = page;
   window.scrollTo(0, 0);
 
+  if (page === "generate") {
+    initGenerate(navigate, (cb) => showAuthOverlay(cb));
+    return;
+  }
+
   if (!currentUser) return;
 
   const user = currentUser;
   if (page === "dashboard") void initDashboard(user, navigate);
-  if (page === "generate") initGenerate(navigate);
   if (page === "results") initResults(lastGenerationResult, navigate);
   if (page === "gallery") void initGallery();
-  if (page === "wallet") void initWallet(user);
+}
+
+function openWalletModal(): void {
+  if (!currentUser) return;
+  const backdrop = document.getElementById("wallet-modal-backdrop");
+  const modal = document.getElementById("wallet-modal");
+  if (backdrop) backdrop.classList.add("show");
+  if (modal) void initWallet(currentUser);
+}
+
+function closeWalletModal(): void {
+  const backdrop = document.getElementById("wallet-modal-backdrop");
+  const modal = document.getElementById("wallet-modal");
+  if (backdrop) backdrop.classList.remove("show");
 }
 
 // ── Auth overlay ───────────────────────────────────────────────────────────
 
-function showAuthOverlay(): void {
+function showAuthOverlay(onSuccess?: () => void): void {
+  if (onSuccess !== undefined) pendingAfterAuth = onSuccess;
   const overlay = document.getElementById("auth-overlay");
   const app = document.getElementById("app");
   const header = document.getElementById("header");
@@ -150,7 +170,10 @@ async function handleAuthSubmit(
       currentUser = resp.user;
       hideAuthOverlay();
       setupApp();
-      navigate("dashboard");
+      const cb = pendingAfterAuth;
+      pendingAfterAuth = null;
+      if (cb) cb();
+      else navigate("dashboard");
     }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Ошибка авторизации";
@@ -178,17 +201,29 @@ function setupProfileMenu(): void {
 // ── Nav ────────────────────────────────────────────────────────────────────
 
 function setupNav(): void {
-  document.querySelectorAll<HTMLButtonElement>(".nav-item").forEach((item) => {
+  document.querySelectorAll<HTMLElement>("[data-page]").forEach((item) => {
     const page = item.dataset["page"];
-    if (page) item.addEventListener("click", () => navigate(page));
+    if (page === "wallet") {
+      item.addEventListener("click", () => openWalletModal());
+    } else if (page) {
+      item.addEventListener("click", () => navigate(page));
+    }
   });
+}
+
+function setupWalletModal(): void {
+  document.getElementById("wallet-modal-close")?.addEventListener("click", () => closeWalletModal());
+  document.getElementById("wallet-modal-backdrop")?.addEventListener("click", () => closeWalletModal());
 }
 
 // ── App init ───────────────────────────────────────────────────────────────
 
 function setupApp(): void {
+  if (appReady) return;
+  appReady = true;
   setupNav();
   setupProfileMenu();
+  setupWalletModal();
 }
 
 async function main(): Promise<void> {
@@ -203,13 +238,34 @@ async function main(): Promise<void> {
     window.history.replaceState({}, "", "/");
   }
 
+  // После успешного платежа обновляем баланс
+  const paymentSuccess = params.has("payment_success");
+  if (paymentSuccess) {
+    window.history.replaceState({}, "", "/");
+  }
+
   try {
     currentUser = await getMe();
     hideAuthOverlay();
     setupApp();
-    navigate("dashboard");
+    
+    if (paymentSuccess && currentUser) {
+      // Даём серверу 1 секунду на обработку платежа
+      await sleep(1000);
+      
+      // Обновляем баланс
+      await updateWalletBalance(currentUser);
+      
+      notifications.success("Платёж успешно принят! Ваш баланс пополнен.");
+      void initWallet(currentUser);
+      openWalletModal();
+    } else {
+      navigate("dashboard");
+    }
   } catch {
-    showAuthOverlay();
+    hideAuthOverlay();
+    setupApp();
+    navigate("generate");
   }
 }
 

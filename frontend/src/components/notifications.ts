@@ -1,8 +1,7 @@
-type ToastType = "success" | "error" | "warning" | "info";
+type ToastType = "success" | "warning" | "info";
 
 const ICONS: Record<ToastType, string> = {
   success: "✓",
-  error: "✕",
   warning: "⚠",
   info: "ℹ",
 };
@@ -46,9 +45,31 @@ function show(message: string, type: ToastType, duration = 3000): void {
   if (duration > 0) setTimeout(remove, duration);
 }
 
+function showError(message: string): void {
+  const overlay = document.createElement("div");
+  overlay.className = "error-modal-overlay";
+  overlay.innerHTML = `
+    <div class="error-modal">
+      <div class="error-modal-icon">✕</div>
+      <div class="error-modal-message">${escapeHtml(message)}</div>
+      <button class="error-modal-ok">OK</button>
+    </div>
+  `;
+
+  const close = (): void => {
+    overlay.classList.add("remove");
+    setTimeout(() => overlay.remove(), 250);
+  };
+
+  overlay.querySelector(".error-modal-ok")?.addEventListener("click", close);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+
+  document.body.appendChild(overlay);
+}
+
 export const notifications = {
   success: (msg: string) => show(msg, "success"),
-  error: (msg: string) => show(msg, "error"),
+  error: (msg: string) => showError(msg),
   warning: (msg: string) => show(msg, "warning"),
   info: (msg: string) => show(msg, "info"),
 };

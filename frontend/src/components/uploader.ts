@@ -20,7 +20,7 @@ export class PhotoUploader {
       if (input.files) this.handleFiles(input.files);
     });
 
-    document.getElementById("upload-btn")?.addEventListener("click", () => input?.click());
+    zone?.addEventListener("click", () => input?.click());
 
     document.getElementById("clear-photo")?.addEventListener("click", () => this.clear());
 

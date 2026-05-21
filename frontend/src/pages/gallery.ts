@@ -50,9 +50,9 @@ function buildCard(g: Generation): HTMLElement {
   card.dataset["status"] = g.status;
   card.dataset["prompt"] = g.prompt.toLowerCase();
 
-  if (g.status === "completed" && g.result_file_id) {
+  if (g.status === "completed" && g.result_file_id && g.result_file_id.startsWith("/uploads/")) {
     card.innerHTML = `
-      <img src="/uploads/${g.result_file_id}" alt="Result" loading="lazy">
+      <img src="${g.result_file_id}" alt="Result" loading="lazy">
       <div class="gallery-overlay">
         <div class="gallery-prompt">${escapeHtml(g.prompt.slice(0, 60))}…</div>
         <div class="gallery-meta">${formatDate(g.created_at)}</div>

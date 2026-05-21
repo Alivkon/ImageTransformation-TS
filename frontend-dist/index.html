@@ -7,8 +7,8 @@
     <title>ImageTransformation - Генератор фото</title>
     
     <!-- CSS -->
-  <script type="module" crossorigin src="/assets/index-CE-GoL88.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-DCgzzX_g.css">
+  <script type="module" crossorigin src="/assets/index-CKzJFQtY.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-C_3Gra38.css">
 </head>
 <body>
     <!-- App Container -->
@@ -227,10 +227,22 @@
             </section>
 
             <!-- Results Page -->
-            <section class="page" id="page-results" data-page="results" style="display: none;">
+            <section class="page" id="page-results" data-page="results">
                 <div class="container">
                     <div class="results-wrapper">
                         <h2>✅ Ваше изображение готово!</h2>
+
+                        <!-- Generation Info -->
+                        <div class="generation-info" id="generation-info" style="display:none;">
+                            <div class="info-item">
+                                <span class="info-label">Запрос:</span>
+                                <span class="info-value" id="result-prompt"></span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Время генерации:</span>
+                                <span class="info-value" id="result-time"></span>
+                            </div>
+                        </div>
 
                         <div class="results-grid">
                             <!-- Original Photo -->
@@ -256,25 +268,14 @@
                             <button class="btn btn-primary" id="generate-another-btn" data-page="generate">
                                 ✨ Сгенерировать ещё
                             </button>
-                            <button class="btn btn-secondary" id="share-btn">
-                                📤 Поделиться
+                            <button class="btn btn-secondary" id="download-result-btn">
+                                ⬇️ Скачать
                             </button>
                             <button class="btn btn-secondary" id="back-dashboard-btn" data-page="dashboard">
                                 ← На главную
                             </button>
                         </div>
 
-                        <!-- Generation Info -->
-                        <div class="generation-info">
-                            <div class="info-item">
-                                <span class="info-label">Запрос:</span>
-                                <span class="info-value" id="result-prompt"></span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Время генерации:</span>
-                                <span class="info-value" id="result-time"></span>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </section>
@@ -308,11 +309,14 @@
                 </div>
             </section>
 
-            <!-- Wallet/Payment Page -->
-            <section class="page" id="page-wallet" data-page="wallet">
-                <div class="container">
-                    <h2>💳 Пополнить баланс</h2>
-
+            <!-- Wallet/Payment Modal -->
+            <div id="wallet-modal-backdrop" class="modal-backdrop"></div>
+            <div class="modal" id="wallet-modal">
+                <div class="modal-header">
+                    <h2 class="modal-title">💳 Пополнить баланс</h2>
+                    <button class="modal-close" id="wallet-modal-close">✕</button>
+                </div>
+                <div class="modal-body">
                     <!-- Current Balance -->
                     <div class="wallet-info">
                         <div class="balance-card">
@@ -380,7 +384,7 @@
                         </div>
                     </div>
                 </div>
-            </section>
+            </div>
 
         </main>
 

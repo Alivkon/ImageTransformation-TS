@@ -99,6 +99,36 @@
     color: var(--white);
 }
 
+/* Auth Tabs */
+.auth-tabs {
+    display: flex;
+    gap: var(--space-sm);
+    margin: var(--space-lg) 0 var(--space-md);
+}
+
+.auth-tab {
+    appearance: none;
+    border: 1px solid var(--border-gray);
+    border-radius: var(--radius-md);
+    background-color: var(--bg-tertiary, var(--light-gray));
+    color: var(--text-primary, var(--dark-gray));
+    padding: var(--space-sm) var(--space-md);
+    font: inherit;
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: background-color var(--transition-base), border-color var(--transition-base), color var(--transition-base);
+}
+
+.auth-tab:hover {
+    border-color: var(--primary);
+}
+
+.auth-tab.active {
+    background: var(--gradient-primary);
+    border-color: transparent;
+    color: #FFFFFF;
+}
+
 .btn-danger {
     background-color: var(--error);
     color: var(--white);
@@ -440,13 +470,17 @@
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-xl);
     z-index: var(--z-modal);
-    max-width: 500px;
+    max-width: 600px;
     width: 90%;
     max-height: 90vh;
     overflow-y: auto;
     opacity: 0;
     visibility: hidden;
     transition: all var(--transition-base);
+}
+
+#wallet-modal {
+    max-width: 700px;
 }
 
 .modal-backdrop.show ~ .modal {
@@ -598,6 +632,92 @@
 
 .toast-info {
     border-left-color: var(--info);
+}
+
+/* Error Modal */
+.error-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: calc(var(--z-notification) + 10);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-lg);
+    animation: errorOverlayIn 0.2s ease;
+}
+
+@keyframes errorOverlayIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.error-modal-overlay.remove {
+    animation: errorOverlayOut 0.25s ease forwards;
+}
+
+@keyframes errorOverlayOut {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+
+.error-modal {
+    background: var(--card-bg, #1e1e2e);
+    border-radius: var(--radius-xl, 16px);
+    padding: var(--space-xl) var(--space-xl);
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-lg);
+    animation: errorModalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes errorModalIn {
+    from { transform: scale(0.85); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+}
+
+.error-modal-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--error, #ef4444);
+    font-size: 26px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.error-modal-message {
+    font-size: var(--font-size-base, 16px);
+    line-height: 1.6;
+    color: var(--text-primary, #f1f5f9);
+    font-weight: var(--font-weight-medium, 500);
+}
+
+.error-modal-ok {
+    margin-top: var(--space-sm);
+    padding: 12px 48px;
+    border-radius: var(--radius-full, 9999px);
+    border: none;
+    background: var(--error, #ef4444);
+    color: #fff;
+    font-size: var(--font-size-base, 16px);
+    font-weight: var(--font-weight-semibold, 600);
+    cursor: pointer;
+    transition: opacity var(--transition-base);
+    width: 100%;
+}
+
+.error-modal-ok:hover {
+    opacity: 0.85;
 }
 
 /* Progress Bar */

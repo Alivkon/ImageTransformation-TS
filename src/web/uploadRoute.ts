@@ -27,7 +27,9 @@ export function registerUploadRoute(fastify: FastifyInstance): void {
     }
 
     originalName = data.filename;
-    filename = `${crypto.randomUUID()}.jpg`;
+    const now = new Date();
+    const dt = now.toISOString().slice(0, 19).replace(/[-:T]/g, "").replace(/(\d{8})(\d{6})/, "$1_$2");
+    filename = `${dt}_${crypto.randomUUID()}_src.jpg`;
     const filePath = path.join(UPLOADS_DIR, filename);
 
     try {

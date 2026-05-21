@@ -1,7 +1,7 @@
 services:
   postgre_imagetransformer:
     image: postgres:16-alpine
-    container_name: postgre_imagetransformer
+    container_name: postgre_imagetransformer_ts
     restart: unless-stopped
     env_file: .env
     environment:
@@ -12,7 +12,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     # Закомментируй для доступа только внутри сети
     ports:
-      - "5433:5432"
+      - "5434:5432"
     networks:
       - imagetransformer_net
 
@@ -36,6 +36,7 @@ services:
       - n8n_default
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=n8n_default"
       - "traefik.http.routers.imagetransformation.rule=Host(`imagetransformation.ru`)"
       - "traefik.http.routers.imagetransformation.entrypoints=websecure"
       - "traefik.http.routers.imagetransformation.tls=true"

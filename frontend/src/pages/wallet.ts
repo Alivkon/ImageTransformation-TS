@@ -16,6 +16,16 @@ let selectedAmount: number | null = null;
 let selectedMethod: "yookassa" | "robokassa" | null = null;
 let activeWidget: { destroy: () => void } | null = null;
 
+export async function updateWalletBalance(user: User): Promise<void> {
+  try {
+    const { balance } = await getBalance();
+    const walletBalance = document.getElementById("wallet-balance");
+    if (walletBalance) walletBalance.textContent = `${balance.toFixed(0)}₽`;
+  } catch {
+    // non-critical
+  }
+}
+
 export async function initWallet(user: User): Promise<void> {
   selectedAmount = null;
   selectedMethod = null;
@@ -24,13 +34,25 @@ export async function initWallet(user: User): Promise<void> {
   const walletBalance = document.getElementById("wallet-balance");
   if (walletBalance) walletBalance.textContent = `${user.balance.toFixed(0)}₽`;
 
+  // Remove all previous topup button listeners
+  document.querySelectorAll<HTMLButtonElement>(".topup-btn").forEach((btn) => {
+    const newBtn = btn.cloneNode(true) as HTMLButtonElement;
+    btn.parentNode?.replaceChild(newBtn, btn);
+  });
+
+  // Register new listeners
   document.querySelectorAll<HTMLButtonElement>(".topup-btn").forEach((btn) => {
     btn.classList.remove("active");
     btn.addEventListener("click", () => {
       document.querySelectorAll(".topup-btn").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       selectedAmount = parseInt(btn.dataset["amount"] ?? "0", 10);
-      clearCustomAmount();
+      
+      // Fill custom amount field
+      const customInput = document.getElementById("custom-amount") as HTMLInputElement | null;
+      if (customInput) {
+        customInput.value = String(selectedAmount);
+      }
     });
   });
 
@@ -60,11 +82,6 @@ export async function initWallet(user: User): Promise<void> {
   } catch {
     // non-critical
   }
-}
-
-function clearCustomAmount(): void {
-  const input = document.getElementById("custom-amount") as HTMLInputElement | null;
-  if (input) input.value = "";
 }
 
 async function handlePay(): Promise<void> {
@@ -112,9 +129,12 @@ async function handleYookassa(amount: number): Promise<void> {
   }
   container.innerHTML = "";
 
+  const returnUrl = new URL(window.location.origin);
+  returnUrl.searchParams.set("payment_success", "true");
+
   const widget = new window.YooMoneyCheckoutWidget({
     confirmation_token,
-    return_url: window.location.origin,
+    return_url: returnUrl.toString(),
     error_callback: (err) => notifications.error(`YooKassa ошибка: ${String(err)}`),
   });
   activeWidget = widget;

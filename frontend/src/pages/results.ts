@@ -3,16 +3,26 @@ import { notifications } from "../components/notifications.js";
 
 type Navigate = (page: string) => void;
 
+let resultsInitialized = false;
+
 export function initResults(result: GenerationResult | null, navigate: Navigate): void {
   const originalImg = document.getElementById("result-original") as HTMLImageElement | null;
   const generatedImg = document.getElementById("result-generated") as HTMLImageElement | null;
-  const promptEl = document.getElementById("result-prompt");
 
   if (result) {
     if (originalImg) originalImg.src = result.originalDataUrl;
     if (generatedImg) generatedImg.src = result.resultUrl;
+
+    const promptEl = document.getElementById("result-prompt");
+    const timeEl = document.getElementById("result-time");
+    const infoEl = document.getElementById("generation-info");
     if (promptEl) promptEl.textContent = result.prompt;
+    if (timeEl) timeEl.textContent = `${result.elapsedSeconds} сек`;
+    if (infoEl) infoEl.style.display = "";
   }
+
+  if (resultsInitialized) return;
+  resultsInitialized = true;
 
   document.getElementById("download-btn")?.addEventListener("click", () => {
     if (!generatedImg?.src) return;
@@ -22,15 +32,13 @@ export function initResults(result: GenerationResult | null, navigate: Navigate)
     link.click();
   });
 
-  document.getElementById("share-btn")?.addEventListener("click", () => {
-    if (!generatedImg?.src) return;
-    if (navigator.share) {
-      navigator
-        .share({ title: "ImageTransformation Result", url: generatedImg.src })
-        .catch(() => notifications.info("Поделиться не удалось"));
-    } else {
-      notifications.info("Функция поделиться недоступна");
-    }
+  document.getElementById("download-result-btn")?.addEventListener("click", () => {
+    const src = (document.getElementById("result-generated") as HTMLImageElement | null)?.src;
+    if (!src) return;
+    const link = document.createElement("a");
+    link.href = src;
+    link.download = "transformation_result.jpg";
+    link.click();
   });
 
   document.getElementById("generate-another-btn")?.addEventListener("click", () => navigate("generate"));

@@ -1,20 +1,28 @@
 import { PhotoUploader } from "../components/uploader.js";
 import { notifications } from "../components/notifications.js";
-import { uploadPhoto, startGeneration, getGenerationStatus, sleep } from "../api.js";
+import { uploadPhoto, startGeneration, getGenerationStatus, sleep, getToken } from "../api.js";
 
 export interface GenerationResult {
   generationId: number;
   resultUrl: string;
   prompt: string;
   originalDataUrl: string;
+  elapsedSeconds: number;
 }
 
 type Navigate = (page: string, data?: GenerationResult) => void;
 
 const uploader = new PhotoUploader();
 let hasPhoto = false;
+let generateInitialized = false;
+let currentOnNeedAuth: ((onSuccess: () => void) => void) | undefined;
 
-export function initGenerate(navigate: Navigate): void {
+export function initGenerate(navigate: Navigate, onNeedAuth?: (onSuccess: () => void) => void): void {
+  currentOnNeedAuth = onNeedAuth;
+
+  if (generateInitialized) return;
+  generateInitialized = true;
+
   uploader.init((photo) => {
     hasPhoto = photo !== null;
     updateGenerateBtn();
@@ -63,8 +71,14 @@ async function handleGenerate(navigate: Navigate): Promise<void> {
   if (!photo) { notifications.error("Пожалуйста, загрузите фото"); return; }
   if (!prompt) { notifications.error("Пожалуйста, введите описание"); return; }
 
+  if (!getToken()) {
+    if (currentOnNeedAuth) currentOnNeedAuth(() => void handleGenerate(navigate));
+    return;
+  }
+
   setLoading(true);
   showStatus("⏳ Загружаем фото…");
+  const startedAt = Date.now();
 
   try {
     const uploadUrl = await uploadPhoto(photo.file);
@@ -74,10 +88,11 @@ async function handleGenerate(navigate: Navigate): Promise<void> {
     showStatus("⏳ Генерируем изображение… (это занимает до 3 минут)");
 
     const resultUrl = await pollGeneration(generation_id);
+    const elapsedSeconds = Math.round((Date.now() - startedAt) / 1000);
 
     hideStatus();
     notifications.success("Изображение готово!");
-    navigate("results", { generationId: generation_id, resultUrl, prompt, originalDataUrl: photo.dataUrl });
+    navigate("results", { generationId: generation_id, resultUrl, prompt, originalDataUrl: photo.dataUrl, elapsedSeconds });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Неизвестная ошибка";
     notifications.error(`Ошибка: ${msg}`);
