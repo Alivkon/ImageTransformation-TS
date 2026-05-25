@@ -207,6 +207,85 @@ export async function savePayment(params: {
   );
 }
 
+export async function creditYookassaPayment(params: {
+  userId: number;
+  amount: number;
+  yookassaPaymentId: string;
+}): Promise<{ credited: boolean; balance: number }> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const insertResult = await client.query<{ id: number }>(
+      `INSERT INTO payments (user_id, amount, yookassa_payment_id)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (yookassa_payment_id) WHERE yookassa_payment_id IS NOT NULL
+       DO NOTHING
+       RETURNING id`,
+      [params.userId, params.amount, params.yookassaPaymentId],
+    );
+
+    if (!insertResult.rows[0]) {
+      const userResult = await client.query<{ balance: number }>(
+        "SELECT balance FROM users WHERE user_id = $1",
+        [params.userId],
+      );
+      await client.query("COMMIT");
+      return { credited: false, balance: userResult.rows[0]?.balance ?? 0 };
+    }
+
+    const userResult = await client.query<{ balance: number }>(
+      "UPDATE users SET balance = balance + $1 WHERE user_id = $2 RETURNING balance",
+      [params.amount, params.userId],
+    );
+    await client.query("COMMIT");
+    return { credited: true, balance: userResult.rows[0]?.balance ?? params.amount };
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+export async function creditManualBalance(params: {
+  userId: number;
+  amount: number;
+  note?: string;
+}): Promise<{ balance: number; paymentId: number; marker: string } | null> {
+  const client = await pool.connect();
+  const marker = `manual:${crypto.randomUUID()}`;
+  try {
+    await client.query("BEGIN");
+    const userResult = await client.query<{ balance: number }>(
+      "UPDATE users SET balance = balance + $1 WHERE user_id = $2 RETURNING balance",
+      [params.amount, params.userId],
+    );
+    const user = userResult.rows[0];
+    if (!user) {
+      await client.query("ROLLBACK");
+      return null;
+    }
+
+    const paymentResult = await client.query<{ id: number }>(
+      `INSERT INTO payments (user_id, amount, yookassa_payment_id, provider_charge_id)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id`,
+      [params.userId, params.amount, marker, params.note ?? null],
+    );
+    await client.query("COMMIT");
+    return {
+      balance: user.balance,
+      paymentId: paymentResult.rows[0]!.id,
+      marker,
+    };
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 export async function createGeneration(
   userId: number,
   prompt: string,
@@ -303,16 +382,39 @@ export async function createRobokassaInvoice(userId: number, amount: number): Pr
 
 export async function confirmRobokassaInvoice(
   invId: number,
-): Promise<[number, number] | null> {
-  const result = await pool.query<{ user_id: number; amount: number }>(
-    `UPDATE payments
-     SET yookassa_payment_id = $1
-     WHERE robokassa_inv_id = $2 AND yookassa_payment_id IS NULL
-     RETURNING user_id, amount`,
-    [`robokassa:${invId}`, invId],
-  );
-  const row = result.rows[0];
-  return row ? [row.user_id, row.amount] : null;
+): Promise<{ userId: number; amount: number; balance: number } | null> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await client.query<{ user_id: number; amount: number }>(
+      `UPDATE payments
+       SET yookassa_payment_id = $1
+       WHERE robokassa_inv_id = $2 AND yookassa_payment_id IS NULL
+       RETURNING user_id, amount`,
+      [`robokassa:${invId}`, invId],
+    );
+    const row = result.rows[0];
+    if (!row) {
+      await client.query("COMMIT");
+      return null;
+    }
+
+    const userResult = await client.query<{ balance: number }>(
+      "UPDATE users SET balance = balance + $1 WHERE user_id = $2 RETURNING balance",
+      [row.amount, row.user_id],
+    );
+    await client.query("COMMIT");
+    return {
+      userId: row.user_id,
+      amount: row.amount,
+      balance: userResult.rows[0]?.balance ?? row.amount,
+    };
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 export async function getAdminPayments(limit = 50, offset = 0): Promise<Record<string, unknown>[]> {
@@ -327,6 +429,17 @@ export async function getAdminPayments(limit = 50, offset = 0): Promise<Record<s
     [limit, offset],
   );
   return result.rows;
+}
+
+export async function getUserPayments(userId: number, limit = 20): Promise<{ id: number; amount: number; created_at: string }[]> {
+  const result = await pool.query<{ id: number; amount: number; created_at: Date }>(
+    `SELECT id, amount, created_at FROM payments
+     WHERE user_id = $1
+     ORDER BY created_at DESC
+     LIMIT $2`,
+    [userId, limit],
+  );
+  return result.rows.map((r) => ({ id: r.id, amount: r.amount, created_at: r.created_at.toISOString() }));
 }
 
 // ─── Web auth ────────────────────────────────────────────────────────────────

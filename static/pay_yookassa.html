@@ -166,7 +166,10 @@
                     throw new Error(data.error || `Ошибка сервера: ${res.status}`);
                 }
 
-                const { confirmation_token } = await res.json();
+                const { confirmation_token, payment_id } = await res.json();
+                if (!confirmation_token || !payment_id) {
+                    throw new Error("Не удалось создать платёж.");
+                }
 
                 widget = new YooMoneyCheckoutWidget({
                     confirmation_token,
@@ -184,8 +187,24 @@
 
                 widget.render("payment-form");
 
-                widget.on("success", () => {
-                    payBtn.textContent = "✅ Оплата прошла!";
+                widget.on("success", async () => {
+                    payBtn.textContent = "Проверяем оплату...";
+                    try {
+                        const confirmRes = await fetch("/api/payment/yookassa/confirm", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ user_id: userId, payment_id }),
+                        });
+                        if (!confirmRes.ok) {
+                            const data = await confirmRes.json().catch(() => ({}));
+                            throw new Error(data.error || `Ошибка сервера: ${confirmRes.status}`);
+                        }
+                        payBtn.textContent = "✅ Баланс пополнен!";
+                    } catch (e) {
+                        console.error("YooKassa confirm error:", e);
+                        payBtn.textContent = "✅ Оплата прошла!";
+                        errorMsg.textContent = "Платёж принят. Баланс обновится после обработки уведомления.";
+                    }
                     setTimeout(() => tg.close(), 3000);
                 });
 

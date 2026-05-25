@@ -6,7 +6,7 @@ import type { GenerationResult } from "./pages/generate.js";
 import { initResults } from "./pages/results.js";
 import { initGallery } from "./pages/gallery.js";
 import { initWallet, updateWalletBalance } from "./pages/wallet.js";
-import { getMe, login, register, logout, setToken, resendVerification, sleep } from "./api.js";
+import { getMe, login, register, logout, setToken, resendVerification, sleep, getBalance, confirmYookassaPayment } from "./api.js";
 import type { User } from "./types.js";
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -21,6 +21,23 @@ let appReady = false;
 
 const PAGES = ["dashboard", "generate", "gallery", "results"] as const;
 type Page = (typeof PAGES)[number];
+
+async function refreshUserStats(): Promise<void> {
+  if (!currentUser) return;
+
+  const stats = await getBalance();
+  currentUser = { ...currentUser, ...stats };
+
+  const balance = document.getElementById("balance");
+  const freeGens = document.getElementById("free-generations");
+  const totalGens = document.getElementById("total-generations");
+  const walletBalance = document.getElementById("wallet-balance");
+
+  if (balance) balance.textContent = `${stats.balance.toFixed(0)}₽`;
+  if (freeGens) freeGens.textContent = String(stats.free_generations);
+  if (totalGens) totalGens.textContent = String(stats.total_generations);
+  if (walletBalance) walletBalance.textContent = `${stats.balance.toFixed(0)}₽`;
+}
 
 function navigate(page: string, data?: GenerationResult): void {
   if (data) lastGenerationResult = data;
@@ -46,14 +63,17 @@ function navigate(page: string, data?: GenerationResult): void {
   window.scrollTo(0, 0);
 
   if (page === "generate") {
-    initGenerate(navigate, (cb) => showAuthOverlay(cb));
+    initGenerate(navigate, (cb) => showAuthOverlay(cb), refreshUserStats);
     return;
   }
 
   if (!currentUser) return;
 
   const user = currentUser;
-  if (page === "dashboard") void initDashboard(user, navigate);
+  if (page === "dashboard") {
+    void initDashboard(user, navigate);
+    void refreshUserStats();
+  }
   if (page === "results") initResults(lastGenerationResult, navigate);
   if (page === "gallery") void initGallery();
 }
@@ -202,6 +222,7 @@ function setupProfileMenu(): void {
 
 function setupNav(): void {
   document.querySelectorAll<HTMLElement>("[data-page]").forEach((item) => {
+    if (item.classList.contains("page")) return;
     const page = item.dataset["page"];
     if (page === "wallet") {
       item.addEventListener("click", () => openWalletModal());
@@ -240,6 +261,7 @@ async function main(): Promise<void> {
 
   // После успешного платежа обновляем баланс
   const paymentSuccess = params.has("payment_success");
+  const paymentId = params.get("payment_id");
   if (paymentSuccess) {
     window.history.replaceState({}, "", "/");
   }
@@ -250,15 +272,40 @@ async function main(): Promise<void> {
     setupApp();
     
     if (paymentSuccess && currentUser) {
-      // Даём серверу 1 секунду на обработку платежа
-      await sleep(1000);
-      
-      // Обновляем баланс
-      await updateWalletBalance(currentUser);
-      
-      notifications.success("Платёж успешно принят! Ваш баланс пополнен.");
+      const oldBalance = currentUser.balance;
       void initWallet(currentUser);
       openWalletModal();
+
+      if (paymentId) {
+        try {
+          const result = await confirmYookassaPayment(paymentId);
+          currentUser = { ...currentUser, balance: result.balance };
+          await refreshUserStats();
+          void initWallet(currentUser);
+          notifications.success(result.credited ? "Платёж успешно принят! Ваш баланс пополнен." : "Платёж уже был зачислен.");
+          return;
+        } catch {
+          // Fall through to webhook polling below.
+        }
+      }
+
+      // Poll in background until webhook arrives and credits the balance (up to 30s)
+      void (async () => {
+        for (let i = 0; i < 10; i++) {
+          await sleep(3000);
+          try {
+            const stats = await getBalance();
+            if (stats.balance > oldBalance) {
+              currentUser = { ...currentUser!, ...stats };
+              await refreshUserStats();
+              void initWallet(currentUser!);
+              notifications.success("Платёж успешно принят! Ваш баланс пополнен.");
+              return;
+            }
+          } catch { /* non-critical */ }
+        }
+        notifications.info("Платёж обрабатывается. Баланс обновится в ближайшее время.");
+      })();
     } else {
       navigate("dashboard");
     }

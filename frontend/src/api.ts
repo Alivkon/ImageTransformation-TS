@@ -113,11 +113,22 @@ export async function getBalance(): Promise<{ balance: number; free_generations:
   return request("/api/web/balance");
 }
 
+export async function getPayments(): Promise<{ id: number; amount: number; created_at: string }[]> {
+  return request("/api/web/payments");
+}
+
 // Payments
-export async function createYookassaPayment(amount: number): Promise<{ confirmation_token: string }> {
+export async function createYookassaPayment(amount: number): Promise<{ confirmation_token: string; payment_id: string }> {
   return request("/api/web/payment/yookassa", {
     method: "POST",
     body: JSON.stringify({ amount }),
+  });
+}
+
+export async function confirmYookassaPayment(paymentId: string): Promise<{ credited: boolean; status?: string; balance: number }> {
+  return request("/api/web/payment/yookassa/confirm", {
+    method: "POST",
+    body: JSON.stringify({ payment_id: paymentId }),
   });
 }
 

@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="ImageTransformation - Трансформируйте ваши фото с помощью ИИ">
+    <link rel="icon" href="/favicon.ico" sizes="64x64">
     <title>ImageTransformation - Генератор фото</title>
     
     <!-- CSS -->
-  <script type="module" crossorigin src="/assets/index-CKzJFQtY.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-C_3Gra38.css">
+  <script type="module" crossorigin src="/assets/index-mIFD3795.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DeccYf2t.css">
 </head>
 <body>
     <!-- App Container -->
@@ -19,11 +20,7 @@
             <div class="header-content">
                 <div class="logo">
                     <a href="#" class="logo-link">
-                        <svg class="logo-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <rect x="3" y="3" width="18" height="18" rx="2"/>
-                            <path d="M3 9h18M3 15h18"/>
-                        </svg>
-                        <span class="logo-text">ImageTransformation</span>
+                        <img class="logo-image" src="/images/logo_dark_theme.png" alt="ImageTransformation">
                     </a>
                 </div>
                 
@@ -38,7 +35,7 @@
                         <span>🎨 Галерея</span>
                     </button>
                     <button class="nav-item" data-page="wallet">
-                        <span>💳 Кошелек</span>
+                        <span>💳Оплатить</span>
                     </button>
                 </nav>
 
@@ -213,9 +210,9 @@
                         <div class="generate-action">
                             <button id="generate-btn" class="btn btn-large btn-primary" disabled>
                                 <span class="btn-spinner" id="btn-spinner" style="display: none;">⏳</span>
-                                <span class="btn-label">Сгенерировать</span>
+                                <span class="btn-label" id="btn-label">Сгенерировать</span>
                             </button>
-                            <p class="action-hint">
+                            <p class="action-hint" id="generation-hint">
                                 Стоимость генерации: <span id="generation-cost">20</span>₽
                             </p>
                         </div>
@@ -387,6 +384,25 @@
             </div>
 
         </main>
+
+        <!-- Legal Footer -->
+        <footer class="footer" id="footer-legal">
+            <div class="footer-inner">
+                <div class="footer-contacts">
+                    <a href="mailto:hello@imagetransformation.ru">hello@imagetransformation.ru</a>
+                    &nbsp;·&nbsp;
+                    <a href="https://t.me/AlexAIBotMaster" target="_blank">@AlexAIBotMaster</a>
+                </div>
+                <div class="footer-requisites">
+                    Самозанятый Конищев Александр Иванович · ИНН&nbsp;301610174061
+                </div>
+                <div class="footer-links">
+                    <a href="/oferta" target="_blank">Оферта</a>
+                    <a href="/oferta#vozvrat" target="_blank">Возврат</a>
+                    <a href="/privacy" target="_blank">Политика ПД</a>
+                </div>
+            </div>
+        </footer>
 
         <!-- Toast Notifications -->
         <div id="toast-container" class="toast-container"></div>

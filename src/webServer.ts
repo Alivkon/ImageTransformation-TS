@@ -23,15 +23,15 @@ import {
   YOOKASSA_SHOP_ID,
 } from "./config.js";
 import {
-  addBalance,
   confirmRobokassaInvoice,
+  creditManualBalance,
+  creditYookassaPayment,
   createRobokassaInvoice,
   getAdminGenerations,
   getAdminPayments,
   getAdminStats,
   getAdminUsers,
   getUser,
-  savePayment,
   setFreeGenerations,
 } from "./database.js";
 
@@ -48,6 +48,7 @@ const YOOKASSA_CIDR_RANGES = [
 const YOOKASSA_SINGLE_IPS = new Set(["77.75.156.11", "77.75.156.35"]);
 
 function isYookassaIp(ipStr: string): boolean {
+  if (ipStr.startsWith("::ffff:")) ipStr = ipStr.slice(7);
   if (YOOKASSA_SINGLE_IPS.has(ipStr)) return true;
   return YOOKASSA_CIDR_RANGES.some((cidr) => cidr.contains(ipStr));
 }
@@ -116,7 +117,7 @@ function yookassaAuthHeader(): string {
   return `Basic ${Buffer.from(`${YOOKASSA_SHOP_ID}:${YOOKASSA_SECRET_KEY}`).toString("base64")}`;
 }
 
-async function yookassaCreatePayment(userId: number, amount: number): Promise<{ confirmation_token?: string }> {
+async function yookassaCreatePayment(userId: number, amount: number): Promise<{ id?: string; confirmation_token?: string }> {
   const resp = await fetch("https://api.yookassa.ru/v3/payments", {
     method: "POST",
     headers: {
@@ -133,7 +134,7 @@ async function yookassaCreatePayment(userId: number, amount: number): Promise<{ 
     }),
     signal: AbortSignal.timeout(15_000),
   });
-  return (await resp.json()) as { confirmation_token?: string };
+  return (await resp.json()) as { id?: string; confirmation_token?: string };
 }
 
 async function yookassaFindPayment(paymentId: string): Promise<{
@@ -196,6 +197,11 @@ export async function startWebServer(bot: Bot): Promise<void> {
     return reply.sendFile("oferta.html");
   });
 
+  fastify.get("/privacy", (_req, reply) => {
+    reply.header("ngrok-skip-browser-warning", "true");
+    return reply.sendFile("privacy.html");
+  });
+
   fastify.get("/pay_yookassa", (_req, reply) => {
     reply.header("ngrok-skip-browser-warning", "true");
     return reply.sendFile("pay_yookassa.html");
@@ -248,6 +254,37 @@ export async function startWebServer(bot: Bot): Promise<void> {
     return reply.send({ ok: true });
   });
 
+  fastify.post("/api/admin/credit-balance", async (req, reply) => {
+    if (!requireAdmin(req.headers["authorization"])) return reply.code(403).send();
+    const body = req.body as { user_id?: unknown; amount?: unknown; note?: unknown };
+    const userId = parseInt(String(body.user_id ?? ""), 10);
+    const amount = parseFloat(String(body.amount ?? ""));
+    const note = typeof body.note === "string" ? body.note.trim().slice(0, 200) : "";
+
+    if (!Number.isFinite(userId) || !Number.isFinite(amount) || amount <= 0) {
+      return reply.code(400).send({ error: "Invalid user_id or amount" });
+    }
+
+    const result = await creditManualBalance({
+      userId,
+      amount,
+      ...(note ? { note } : {}),
+    });
+    if (!result) return reply.code(404).send({ error: "User not found" });
+
+    await bot.api
+      .sendMessage(
+        userId,
+        `✅ Баланс пополнен администратором.\n\n` +
+        `Зачислено: <b>${amount.toFixed(0)}₽</b>\n` +
+        `Ваш баланс: <b>${result.balance.toFixed(0)}₽</b>`,
+        { parse_mode: "HTML" },
+      )
+      .catch(() => undefined);
+
+    return reply.send({ ok: true, balance: result.balance, payment_id: result.paymentId });
+  });
+
   // YooKassa — create embedded payment
   fastify.post("/api/payment/create", async (req, reply) => {
     const body = req.body as { user_id?: unknown; amount?: unknown };
@@ -269,11 +306,48 @@ export async function startWebServer(bot: Bot): Promise<void> {
       const token = (payment as Record<string, unknown>)["confirmation"]
         ? ((payment as Record<string, unknown>)["confirmation"] as Record<string, unknown>)["confirmation_token"]
         : payment.confirmation_token;
-      return reply.send({ confirmation_token: token });
+      return reply.send({ confirmation_token: token, payment_id: payment.id });
     } catch (err) {
       fastify.log.error("YooKassa create payment error: %s", err);
       return reply.code(500).send({ error: "Payment creation failed" });
     }
+  });
+
+  fastify.post("/api/payment/yookassa/confirm", async (req, reply) => {
+    const body = req.body as { user_id?: unknown; payment_id?: unknown };
+    const userId = parseInt(String(body.user_id ?? ""), 10);
+    const paymentId = typeof body.payment_id === "string" ? body.payment_id : "";
+
+    if (!Number.isFinite(userId) || !paymentId) {
+      return reply.code(400).send({ error: "user_id and payment_id are required" });
+    }
+
+    let payment: Awaited<ReturnType<typeof yookassaFindPayment>>;
+    try {
+      payment = await yookassaFindPayment(paymentId);
+    } catch (err) {
+      fastify.log.error("YooKassa confirm lookup error: %s", err);
+      return reply.code(502).send({ error: "Payment lookup failed" });
+    }
+
+    if (payment.status !== "succeeded") {
+      const user = await getUser(userId);
+      return reply.send({ credited: false, status: payment.status, balance: user?.balance ?? 0 });
+    }
+
+    const metadataUserId = parseInt(payment.metadata?.user_id ?? "0", 10);
+    if (metadataUserId !== userId) {
+      fastify.log.warn("YooKassa confirm metadata mismatch: payment=%s user=%s metadata=%s", paymentId, userId, metadataUserId);
+      return reply.code(403).send({ error: "Payment belongs to another user" });
+    }
+
+    const amount = parseFloat(payment.amount?.value ?? "0");
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return reply.code(400).send({ error: "Invalid payment amount" });
+    }
+
+    const result = await creditYookassaPayment({ userId, amount, yookassaPaymentId: paymentId });
+    return reply.send({ credited: result.credited, status: payment.status, balance: result.balance });
   });
 
   // YooKassa webhook
@@ -312,25 +386,15 @@ export async function startWebServer(bot: Bot): Promise<void> {
       return reply.code(200).send();
     }
 
-    try {
-      await addBalance(userId, amount);
-      await savePayment({ userId, amount, yookassaPaymentId: paymentId });
-    } catch (err: unknown) {
-      // Duplicate webhook — already processed
-      if (typeof err === "object" && err !== null && (err as { code?: string }).code === "23505") {
-        return reply.code(200).send();
-      }
-      throw err;
-    }
+    const result = await creditYookassaPayment({ userId, amount, yookassaPaymentId: paymentId });
+    if (!result.credited) return reply.code(200).send();
 
-    const user = await getUser(userId);
-    const newBalance = user?.balance ?? amount;
     await bot.api
       .sendMessage(
         userId,
         `✅ Оплата прошла успешно!\n\n` +
         `Зачислено: <b>${amount.toFixed(0)}₽</b>\n` +
-        `Ваш баланс: <b>${newBalance.toFixed(0)}₽</b>`,
+        `Ваш баланс: <b>${result.balance.toFixed(0)}₽</b>`,
         { parse_mode: "HTML" },
       )
       .catch(() => undefined);
@@ -383,17 +447,12 @@ export async function startWebServer(bot: Bot): Promise<void> {
     const result = await confirmRobokassaInvoice(invId);
     if (!result) return reply.send(`OK${invId}`);
 
-    const [userId, amount] = result;
-    await addBalance(userId, amount);
-
-    const user = await getUser(userId);
-    const newBalance = user?.balance ?? amount;
     await bot.api
       .sendMessage(
-        userId,
+        result.userId,
         `✅ Оплата через Robokassa прошла успешно!\n\n` +
-        `Зачислено: <b>${amount.toFixed(0)}₽</b>\n` +
-        `Ваш баланс: <b>${newBalance.toFixed(0)}₽</b>`,
+        `Зачислено: <b>${result.amount.toFixed(0)}₽</b>\n` +
+        `Ваш баланс: <b>${result.balance.toFixed(0)}₽</b>`,
         { parse_mode: "HTML" },
       )
       .catch(() => undefined);

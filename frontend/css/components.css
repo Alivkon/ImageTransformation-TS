@@ -698,7 +698,7 @@
 .error-modal-message {
     font-size: var(--font-size-base, 16px);
     line-height: 1.6;
-    color: var(--text-primary, #f1f5f9);
+    color: #ffffff;
     font-weight: var(--font-weight-medium, 500);
 }
 

@@ -1,6 +1,6 @@
 import { PhotoUploader } from "../components/uploader.js";
 import { notifications } from "../components/notifications.js";
-import { uploadPhoto, startGeneration, getGenerationStatus, sleep, getToken } from "../api.js";
+import { uploadPhoto, startGeneration, getGenerationStatus, sleep, getToken, getBalance } from "../api.js";
 
 export interface GenerationResult {
   generationId: number;
@@ -16,9 +16,31 @@ const uploader = new PhotoUploader();
 let hasPhoto = false;
 let generateInitialized = false;
 let currentOnNeedAuth: ((onSuccess: () => void) => void) | undefined;
+let currentOnGenerationStarted: (() => Promise<void>) | undefined;
 
-export function initGenerate(navigate: Navigate, onNeedAuth?: (onSuccess: () => void) => void): void {
+function updateGenerationHint(freeGens: number): void {
+  const hint = document.getElementById("generation-hint");
+  if (!hint) return;
+  if (freeGens > 0) {
+    hint.innerHTML = `Свободных генераций: <strong>${freeGens}</strong>`;
+  } else {
+    hint.innerHTML = `Стоимость генерации: <span id="generation-cost">20</span>₽`;
+  }
+}
+
+export function initGenerate(
+  navigate: Navigate,
+  onNeedAuth?: (onSuccess: () => void) => void,
+  onGenerationStarted?: () => Promise<void>,
+): void {
   currentOnNeedAuth = onNeedAuth;
+  currentOnGenerationStarted = onGenerationStarted;
+
+  if (getToken()) {
+    void getBalance()
+      .then(b => updateGenerationHint(b.free_generations))
+      .catch(() => undefined);
+  }
 
   if (generateInitialized) return;
   generateInitialized = true;
@@ -85,6 +107,12 @@ async function handleGenerate(navigate: Navigate): Promise<void> {
     showStatus("⏳ Запускаем генерацию…");
 
     const { generation_id } = await startGeneration(uploadUrl, prompt);
+    await currentOnGenerationStarted?.().catch(() => undefined);
+    if (getToken()) {
+      void getBalance()
+        .then(b => updateGenerationHint(b.free_generations))
+        .catch(() => undefined);
+    }
     showStatus("⏳ Генерируем изображение… (это занимает до 3 минут)");
 
     const resultUrl = await pollGeneration(generation_id);
@@ -115,8 +143,10 @@ async function pollGeneration(id: number): Promise<string> {
 function setLoading(on: boolean): void {
   const btn = document.getElementById("generate-btn") as HTMLButtonElement | null;
   const spinner = document.getElementById("btn-spinner");
+  const label = document.getElementById("btn-label");
   if (btn) btn.disabled = on;
   if (spinner) spinner.style.display = on ? "inline-block" : "none";
+  if (label) label.textContent = on ? "Идёт генерация..." : "Сгенерировать";
 }
 
 function showStatus(text: string): void {

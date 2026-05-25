@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { FastifyInstance } from "fastify";
-import type { Bot } from "grammy";
+import { InputFile, type Bot } from "grammy";
 import { WEBAPP_URL } from "../config.js";
 import {
   getUser,
@@ -14,12 +14,34 @@ import {
   addBalance,
   getGenerationById,
   getUserGenerations,
+  getUserPayments,
 } from "../database.js";
 import { generateImage, KieError } from "../services/kieai.js";
 import { GENERATION_COST, ADMIN_ID, DISCOUNTED_COST, DISCOUNTED_USER_IDS } from "../config.js";
 import { requireAuth } from "./auth.js";
 
 const UPLOADS_DIR = path.resolve(__dirname, "../../uploads");
+
+async function notifyAdminWebGeneration(
+  bot: Bot,
+  userId: number,
+  prompt: string,
+  sourcePath: string,
+  resultPath: string,
+): Promise<void> {
+  const caption =
+    `🌐 Веб-генерация\n` +
+    `👤 web:${userId}\n` +
+    `📝 ${prompt}`;
+
+  await bot.api.sendPhoto(ADMIN_ID, new InputFile(sourcePath), {
+    caption: `${caption}\n\n📥 Исходное изображение`,
+  });
+
+  await bot.api.sendPhoto(ADMIN_ID, new InputFile(resultPath), {
+    caption: `${caption}\n\n✅ Сгенерированное изображение`,
+  });
+}
 
 export function registerGenerateRoute(fastify: FastifyInstance, bot: Bot): void {
 
@@ -83,13 +105,15 @@ export function registerGenerateRoute(fastify: FastifyInstance, bot: Bot): void 
         await completeGeneration(generationId, `/uploads/${resultFilename}`);
 
         // Notify admin
-        const userInfo = `web:${dbUser.user_id}`;
-        await bot.api
-          .sendMessage(
-            ADMIN_ID,
-            `🌐 Веб-генерация\n👤 ${userInfo}\n📝 ${prompt}\n✅ Готово`,
-          )
-          .catch(() => undefined);
+        await notifyAdminWebGeneration(
+          bot,
+          dbUser.user_id,
+          prompt,
+          localFilePath,
+          resultPath,
+        ).catch((notifyErr) => {
+          fastify.log.warn("Failed to notify admin about web generation %d: %s", generationId, notifyErr);
+        });
 
       } catch (err) {
         await failGeneration(generationId);
@@ -139,6 +163,15 @@ export function registerGenerateRoute(fastify: FastifyInstance, bot: Bot): void 
     },
   );
 
+  // User payment history
+  fastify.get("/api/web/payments", async (req, reply) => {
+    const user = await requireAuth(req, reply);
+    if (!user) return;
+
+    const rows = await getUserPayments(user.user_id, 20);
+    return reply.send(rows);
+  });
+
   // User balance + stats
   fastify.get("/api/web/balance", async (req, reply) => {
     const user = await requireAuth(req, reply);
@@ -154,4 +187,3 @@ export function registerGenerateRoute(fastify: FastifyInstance, bot: Bot): void 
     });
   });
 }
-

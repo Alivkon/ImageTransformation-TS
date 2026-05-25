@@ -1,4 +1,4 @@
-import { getBalance, createYookassaPayment, createRobokassaPayment } from "../api.js";
+import { getBalance, createYookassaPayment, confirmYookassaPayment, createRobokassaPayment, getPayments } from "../api.js";
 import { notifications } from "../components/notifications.js";
 import type { User } from "../types.js";
 
@@ -8,13 +8,17 @@ declare global {
       confirmation_token: string;
       return_url: string;
       error_callback: (err: unknown) => void;
-    }) => { render: (containerId: string) => void; destroy: () => void };
+    }) => {
+      render: (containerId: string) => void;
+      destroy: () => void;
+      on: (event: "success" | "fail", cb: () => void) => void;
+    };
   }
 }
 
 let selectedAmount: number | null = null;
 let selectedMethod: "yookassa" | "robokassa" | null = null;
-let activeWidget: { destroy: () => void } | null = null;
+let activeWidget: { destroy: () => void; on?: (event: "success" | "fail", cb: () => void) => void } | null = null;
 
 export async function updateWalletBalance(user: User): Promise<void> {
   try {
@@ -82,6 +86,30 @@ export async function initWallet(user: User): Promise<void> {
   } catch {
     // non-critical
   }
+
+  void loadPaymentHistory();
+}
+
+async function loadPaymentHistory(): Promise<void> {
+  const container = document.getElementById("payment-history");
+  if (!container) return;
+
+  try {
+    const payments = await getPayments();
+    if (!payments.length) return;
+
+    container.innerHTML = payments.map((p) => {
+      const date = new Date(p.created_at).toLocaleDateString("ru-RU", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+      });
+      return `<div class="history-item">
+        <span class="history-amount">+${p.amount.toFixed(0)}₽</span>
+        <span class="history-date">${date}</span>
+      </div>`;
+    }).join("");
+  } catch {
+    // non-critical
+  }
 }
 
 async function handlePay(): Promise<void> {
@@ -112,9 +140,9 @@ async function handlePay(): Promise<void> {
 }
 
 async function handleYookassa(amount: number): Promise<void> {
-  const { confirmation_token } = await createYookassaPayment(amount);
+  const { confirmation_token, payment_id } = await createYookassaPayment(amount);
 
-  if (!confirmation_token) {
+  if (!confirmation_token || !payment_id) {
     notifications.error("Не удалось создать платёж YooKassa");
     return;
   }
@@ -131,6 +159,7 @@ async function handleYookassa(amount: number): Promise<void> {
 
   const returnUrl = new URL(window.location.origin);
   returnUrl.searchParams.set("payment_success", "true");
+  returnUrl.searchParams.set("payment_id", payment_id);
 
   const widget = new window.YooMoneyCheckoutWidget({
     confirmation_token,
@@ -139,6 +168,25 @@ async function handleYookassa(amount: number): Promise<void> {
   });
   activeWidget = widget;
   widget.render("yookassa-widget-container");
+
+  setTimeout(() => {
+    const modal = document.getElementById("wallet-modal");
+    if (modal) modal.scrollTo({ top: modal.scrollHeight, behavior: "smooth" });
+  }, 150);
+  widget.on("success", () => {
+    void (async () => {
+      try {
+        const result = await confirmYookassaPayment(payment_id);
+        const walletBalance = document.getElementById("wallet-balance");
+        const headerBalance = document.getElementById("balance");
+        if (walletBalance) walletBalance.textContent = `${result.balance.toFixed(0)}₽`;
+        if (headerBalance) headerBalance.textContent = `${result.balance.toFixed(0)}₽`;
+        notifications.success(result.credited ? "Платёж успешно принят! Ваш баланс пополнен." : "Платёж уже был зачислен.");
+      } catch {
+        notifications.info("Платёж обрабатывается. Баланс обновится в ближайшее время.");
+      }
+    })();
+  });
 }
 
 async function handleRobokassa(amount: number): Promise<void> {

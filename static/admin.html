@@ -69,8 +69,43 @@
     cursor: pointer; font-size: 11px; white-space: nowrap;
   }
   .reset-btn:disabled { opacity: 0.5; cursor: default; }
+  .admin-form {
+    background: var(--bg2);
+    border-radius: 12px;
+    padding: 12px;
+    display: grid;
+    gap: 10px;
+  }
+  .admin-form label {
+    display: grid;
+    gap: 5px;
+    color: var(--hint);
+    font-size: 12px;
+  }
+  .admin-form input {
+    width: 100%;
+    border: 1px solid var(--hint);
+    border-radius: 10px;
+    padding: 10px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+  }
+  .admin-form button {
+    width: 100%;
+    padding: 11px;
+    border-radius: 10px;
+    border: none;
+    background: var(--btn);
+    color: var(--btn-text);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .admin-form button:disabled { opacity: 0.5; cursor: default; }
   .msg { padding: 16px; text-align: center; color: var(--hint); }
   .err { color: #ff453a; }
+  .ok { color: #30d158; }
 </style>
 </head>
 <body>
@@ -82,6 +117,7 @@
   <button class="tab-btn active" onclick="switchTab('generations')">Генерации</button>
   <button class="tab-btn" onclick="switchTab('payments')">Платежи</button>
   <button class="tab-btn" onclick="switchTab('users')">Пользователи</button>
+  <button class="tab-btn" onclick="switchTab('balance')">Баланс</button>
 </div>
 
 <div id="tab-generations" class="tab-content active">
@@ -108,6 +144,25 @@
   <button class="load-more" id="usr-more" onclick="loadUsers()">Загрузить ещё</button>
 </div>
 
+<div id="tab-balance" class="tab-content">
+  <form class="admin-form" id="credit-form">
+    <label>
+      User ID
+      <input id="credit-user-id" inputmode="numeric" autocomplete="off" required>
+    </label>
+    <label>
+      Сумма, ₽
+      <input id="credit-amount" inputmode="decimal" autocomplete="off" required>
+    </label>
+    <label>
+      Комментарий
+      <input id="credit-note" maxlength="200" autocomplete="off" placeholder="Например: ручное доначисление оплаты">
+    </label>
+    <button id="credit-submit" type="submit">Доначислить</button>
+    <div id="credit-msg" class="msg"></div>
+  </form>
+</div>
+
 <script>
 const tg = window.Telegram.WebApp;
 tg.expand();
@@ -124,6 +179,21 @@ async function api(path) {
   return r.json();
 }
 
+async function apiPost(path, body) {
+  const r = await fetch(path, {
+    method: 'POST',
+    headers: {
+      'Authorization': 'tma ' + initData,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (r.status === 403) throw new Error('Нет доступа (403)');
+  if (!r.ok) throw new Error(data.error || 'Ошибка сервера ' + r.status);
+  return data;
+}
+
 function dt(s) {
   if (!s) return '—';
   const d = new Date(s);
@@ -136,8 +206,8 @@ function userName(r) {
 }
 
 function esc(s) {
-  if (!s) return '—';
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  if (s === undefined || s === null || s === '') return '—';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 async function loadStats() {
@@ -214,12 +284,16 @@ async function loadUsers() {
     const tbody = document.getElementById('usr-body');
     rows.forEach(r => {
       const tr = document.createElement('tr');
+      tr.dataset.userId = r.user_id;
       tr.innerHTML = `
         <td style="white-space:nowrap">${esc(userName(r))}<br><span style="color:var(--hint);font-size:10px">${r.user_id}</span></td>
-        <td>${Number(r.balance).toFixed(0)}₽</td>
+        <td><span class="user-balance">${Number(r.balance).toFixed(0)}</span>₽</td>
         <td class="free-gen-cell"><span class="free-gen">${r.free_generations}</span></td>
         <td>${r.total_generations}</td>
-        <td><button class="reset-btn" onclick="resetFree(${r.user_id}, this)">↺ до 3</button></td>`;
+        <td>
+          <button class="reset-btn" onclick="prefillCredit(${r.user_id})">+₽</button>
+          <button class="reset-btn" onclick="resetFree(${r.user_id}, this)">↺ до 3</button>
+        </td>`;
       tbody.appendChild(tr);
     });
     if (rows.length < 200) { usrDone = true; btn.textContent = 'Всё загружено'; }
@@ -252,8 +326,54 @@ async function resetFree(userId, btn) {
   setTimeout(() => { btn.textContent = '↺ до 3'; btn.disabled = false; }, 1500);
 }
 
+function prefillCredit(userId) {
+  switchTab('balance');
+  document.getElementById('credit-user-id').value = String(userId);
+  document.getElementById('credit-amount').focus();
+}
+
+async function creditBalance(e) {
+  e.preventDefault();
+  const btn = document.getElementById('credit-submit');
+  const msg = document.getElementById('credit-msg');
+  const userId = Number(document.getElementById('credit-user-id').value.trim());
+  const amount = Number(document.getElementById('credit-amount').value.trim().replace(',', '.'));
+  const note = document.getElementById('credit-note').value.trim();
+
+  msg.className = 'msg';
+  msg.textContent = '';
+  if (!userId || !amount || amount <= 0) {
+    msg.className = 'msg err';
+    msg.textContent = 'Укажите user_id и сумму больше 0.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Доначисляем...';
+  try {
+    const r = await apiPost('/api/admin/credit-balance', { user_id: userId, amount, note });
+    msg.className = 'msg ok';
+    msg.textContent = `Готово. Новый баланс: ${Number(r.balance).toFixed(0)}₽`;
+
+    const row = document.querySelector(`tr[data-user-id="${userId}"]`);
+    const balanceEl = row && row.querySelector('.user-balance');
+    if (balanceEl) balanceEl.textContent = Number(r.balance).toFixed(0);
+
+    payPage = 0; payDone = false;
+    document.getElementById('pay-body').innerHTML = '';
+    loadPay();
+    loadStats();
+  } catch(err) {
+    msg.className = 'msg err';
+    msg.textContent = err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Доначислить';
+  }
+}
+
 function switchTab(name) {
-  const names = ['generations', 'payments', 'users'];
+  const names = ['generations', 'payments', 'users', 'balance'];
   document.querySelectorAll('.tab-content').forEach(el =>
     el.classList.toggle('active', el.id === 'tab-' + name));
   document.querySelectorAll('.tab-btn').forEach((b, i) =>
@@ -264,6 +384,7 @@ function switchTab(name) {
 loadStats();
 loadGen();
 loadPay();
+document.getElementById('credit-form').addEventListener('submit', creditBalance);
 </script>
 </body>
 </html>
