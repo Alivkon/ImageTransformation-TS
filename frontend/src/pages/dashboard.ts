@@ -51,6 +51,12 @@ export async function initDashboard(user: User, navigate: Navigate): Promise<voi
   if (freeGens) freeGens.textContent = String(user.free_generations);
   if (totalGens) totalGens.textContent = String(user.total_generations);
 
+  const showExtra = user.free_generations > 0;
+  freeGens?.closest(".info-card")?.toggleAttribute("hidden", !showExtra);
+  totalGens?.closest(".info-card")?.toggleAttribute("hidden", !showExtra);
+  const balanceCard = balance?.closest<HTMLElement>(".info-card");
+  if (balanceCard) balanceCard.style.gridColumn = showExtra ? "" : "1 / -1";
+
   const howToBtn = document.getElementById("how-to-btn");
   const howToSection = document.getElementById("how-to-section");
   howToBtn?.addEventListener("click", () => {

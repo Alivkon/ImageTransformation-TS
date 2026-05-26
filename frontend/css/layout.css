@@ -235,7 +235,7 @@
 
 .info-label {
     font-size: var(--font-size-sm);
-    color: var(--medium-gray);
+    color: var(--dark-gray);
     margin-bottom: var(--space-sm);
     text-transform: uppercase;
     letter-spacing: 0.5px;

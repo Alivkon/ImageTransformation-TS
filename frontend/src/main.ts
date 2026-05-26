@@ -37,6 +37,12 @@ async function refreshUserStats(): Promise<void> {
   if (freeGens) freeGens.textContent = String(stats.free_generations);
   if (totalGens) totalGens.textContent = String(stats.total_generations);
   if (walletBalance) walletBalance.textContent = `${stats.balance.toFixed(0)}₽`;
+
+  const showExtra = stats.free_generations > 0;
+  freeGens?.closest(".info-card")?.toggleAttribute("hidden", !showExtra);
+  totalGens?.closest(".info-card")?.toggleAttribute("hidden", !showExtra);
+  const balanceCard = balance?.closest<HTMLElement>(".info-card");
+  if (balanceCard) balanceCard.style.gridColumn = showExtra ? "" : "1 / -1";
 }
 
 function navigate(page: string, data?: GenerationResult): void {
@@ -53,8 +59,8 @@ function navigate(page: string, data?: GenerationResult): void {
   if (target) target.classList.add("active");
   else { navigate("dashboard"); return; }
 
-  // Update nav items
-  document.querySelectorAll(".nav-item").forEach((item) => {
+  // Update nav items (desktop + mobile)
+  document.querySelectorAll(".nav-item, .mobile-nav-item").forEach((item) => {
     item.classList.remove("active");
     if ((item as HTMLElement).dataset["page"] === page) item.classList.add("active");
   });
