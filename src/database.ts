@@ -362,60 +362,6 @@ export async function getAdminGenerations(limit = 50, offset = 0): Promise<Recor
   return result.rows;
 }
 
-export async function createRobokassaInvoice(userId: number, amount: number): Promise<number> {
-  const client = await pool.connect();
-  try {
-    const insertResult = await client.query<{ id: number }>(
-      "INSERT INTO payments (user_id, amount) VALUES ($1, $2) RETURNING id",
-      [userId, amount],
-    );
-    const invId = insertResult.rows[0]!.id;
-    await client.query(
-      "UPDATE payments SET robokassa_inv_id = $1 WHERE id = $1",
-      [invId],
-    );
-    return invId;
-  } finally {
-    client.release();
-  }
-}
-
-export async function confirmRobokassaInvoice(
-  invId: number,
-): Promise<{ userId: number; amount: number; balance: number } | null> {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    const result = await client.query<{ user_id: number; amount: number }>(
-      `UPDATE payments
-       SET yookassa_payment_id = $1
-       WHERE robokassa_inv_id = $2 AND yookassa_payment_id IS NULL
-       RETURNING user_id, amount`,
-      [`robokassa:${invId}`, invId],
-    );
-    const row = result.rows[0];
-    if (!row) {
-      await client.query("COMMIT");
-      return null;
-    }
-
-    const userResult = await client.query<{ balance: number }>(
-      "UPDATE users SET balance = balance + $1 WHERE user_id = $2 RETURNING balance",
-      [row.amount, row.user_id],
-    );
-    await client.query("COMMIT");
-    return {
-      userId: row.user_id,
-      amount: row.amount,
-      balance: userResult.rows[0]?.balance ?? row.amount,
-    };
-  } catch (err) {
-    await client.query("ROLLBACK");
-    throw err;
-  } finally {
-    client.release();
-  }
-}
 
 export async function getAdminPayments(limit = 50, offset = 0): Promise<Record<string, unknown>[]> {
   const result = await pool.query(

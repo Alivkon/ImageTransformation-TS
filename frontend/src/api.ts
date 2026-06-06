@@ -132,13 +132,6 @@ export async function confirmYookassaPayment(paymentId: string): Promise<{ credi
   });
 }
 
-export async function createRobokassaPayment(amount: number): Promise<{ payment_url: string }> {
-  return request("/api/web/payment/robokassa", {
-    method: "POST",
-    body: JSON.stringify({ amount }),
-  });
-}
-
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

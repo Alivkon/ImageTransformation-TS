@@ -1,4 +1,4 @@
-import { getBalance, createYookassaPayment, confirmYookassaPayment, createRobokassaPayment, getPayments } from "../api.js";
+import { getBalance, createYookassaPayment, confirmYookassaPayment, getPayments } from "../api.js";
 import { notifications } from "../components/notifications.js";
 import type { User } from "../types.js";
 
@@ -17,7 +17,6 @@ declare global {
 }
 
 let selectedAmount: number | null = null;
-let selectedMethod: "yookassa" | "robokassa" | null = null;
 let activeWidget: { destroy: () => void; on?: (event: "success" | "fail", cb: () => void) => void } | null = null;
 
 export async function updateWalletBalance(user: User): Promise<void> {
@@ -32,7 +31,6 @@ export async function updateWalletBalance(user: User): Promise<void> {
 
 export async function initWallet(user: User): Promise<void> {
   selectedAmount = null;
-  selectedMethod = null;
   if (activeWidget) { activeWidget.destroy(); activeWidget = null; }
 
   const walletBalance = document.getElementById("wallet-balance");
@@ -65,15 +63,6 @@ export async function initWallet(user: User): Promise<void> {
     const val = parseInt(customAmountInput.value, 10);
     selectedAmount = isNaN(val) ? null : val;
     document.querySelectorAll(".topup-btn").forEach((b) => b.classList.remove("active"));
-  });
-
-  document.querySelectorAll<HTMLButtonElement>(".method-btn").forEach((btn) => {
-    btn.classList.remove("active");
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".method-btn").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      selectedMethod = btn.dataset["method"] as "yookassa" | "robokassa";
-    });
   });
 
   document.getElementById("pay-btn")?.addEventListener("click", () => {
@@ -117,20 +106,12 @@ async function handlePay(): Promise<void> {
     notifications.error("Пожалуйста, выберите сумму (минимум 100₽)");
     return;
   }
-  if (!selectedMethod) {
-    notifications.error("Пожалуйста, выберите способ оплаты");
-    return;
-  }
 
   const btn = document.getElementById("pay-btn") as HTMLButtonElement | null;
   if (btn) btn.disabled = true;
 
   try {
-    if (selectedMethod === "yookassa") {
-      await handleYookassa(selectedAmount);
-    } else {
-      await handleRobokassa(selectedAmount);
-    }
+    await handleYookassa(selectedAmount);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Ошибка";
     notifications.error(`Ошибка оплаты: ${msg}`);
@@ -187,11 +168,6 @@ async function handleYookassa(amount: number): Promise<void> {
       }
     })();
   });
-}
-
-async function handleRobokassa(amount: number): Promise<void> {
-  const { payment_url } = await createRobokassaPayment(amount);
-  window.location.href = payment_url;
 }
 
 function loadYookassaScript(): Promise<void> {

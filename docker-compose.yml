@@ -49,5 +49,6 @@ volumes:
 
 networks:
   imagetransformer_net:
+    name: imgtransform_net
   n8n_default:
     external: true

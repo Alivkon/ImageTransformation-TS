@@ -35,11 +35,6 @@ export const YOOKASSA_SECRET_KEY = required("YOOKASSA_SECRET_KEY");
 export const WEBAPP_URL = optional("WEBAPP_URL", "https://imagetransformation.ru");
 export const WEB_SERVER_PORT = parseInt(optional("WEB_SERVER_PORT", "8080"), 10);
 
-export const ROBOKASSA_MERCHANT_LOGIN = optional("ROBOKASSA_MERCHANT_LOGIN", "");
-export const ROBOKASSA_PASSWORD1 = optional("ROBOKASSA_PASSWORD1", "");
-export const ROBOKASSA_PASSWORD2 = optional("ROBOKASSA_PASSWORD2", "");
-export const ROBOKASSA_TEST_MODE = optional("ROBOKASSA_TEST_MODE", "0") === "1";
-
 export const SMTP_HOST = optional("SMTP_HOST", "smtp.beget.com");
 export const SMTP_PORT = parseInt(optional("SMTP_PORT", "465"), 10);
 export const SMTP_USER = optional("SMTP_USER", "");

@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="ImageTransformation - Трансформируйте ваши фото с помощью ИИ">
+    <meta name="description" content="ИИ сервис для трансформации фото: смена одежды нейросетью, улучшение качества изображений и генерация портретов по фото. Попробуйте бесплатно.">
     <link rel="icon" href="/favicon.ico" sizes="64x64">
-    <title>ImageTransformation - Генератор фото</title>
+    <title>ИИ Генератор и Редактор Фото | Image Transformation</title>
     
     <!-- CSS -->
-  <script type="module" crossorigin src="/assets/index-mIFD3795.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-DeccYf2t.css">
+  <script type="module" crossorigin src="/assets/index-CVltqm_u.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-D5r_1AiH.css">
 </head>
 <body>
     <!-- App Container -->
@@ -20,7 +20,8 @@
             <div class="header-content">
                 <div class="logo">
                     <a href="#" class="logo-link">
-                        <img class="logo-image" src="/images/logo_dark_theme.png" alt="ImageTransformation">
+                        <img class="logo-image logo-dark" src="/images/logo_dark_theme.png" alt="ImageTransformation">
+                        <img class="logo-image logo-light-mobile" src="/images/logo_light_theme.png" alt="ImageTransformation">
                     </a>
                 </div>
                 
@@ -41,7 +42,7 @@
 
                 <div class="header-actions">
                     <button class="btn-icon" id="theme-toggle" title="Переключить тему">
-                        🌙
+                      <!--  🌙-->
                     </button>
                     <button class="btn-icon" id="profile-menu" title="Профиль">
                         👤
@@ -49,6 +50,22 @@
                 </div>
             </div>
         </header>
+
+        <!-- Mobile Top Nav -->
+        <nav class="mobile-top-nav" id="mobile-top-nav">
+            <button class="mobile-nav-item" data-page="dashboard">
+                <span class="mobile-nav-icon">🏠</span>
+                <span class="mobile-nav-label">Главная</span>
+            </button>
+            <button class="mobile-nav-item" data-page="generate">
+                <span class="mobile-nav-icon">✨</span>
+                <span class="mobile-nav-label">Генерировать</span>
+            </button>
+            <button class="mobile-nav-item" data-page="wallet">
+                <span class="mobile-nav-icon">💳</span>
+                <span class="mobile-nav-label">Пополнить</span>
+            </button>
+        </nav>
 
         <!-- Main Content -->
         <main class="main-content" id="main-content">
@@ -353,19 +370,6 @@
                         </div>
                     </div>
 
-                    <!-- Payment Method -->
-                    <div class="payment-methods">
-                        <h3>Способ оплаты</h3>
-                        <div class="method-buttons">
-                            <button class="method-btn" data-method="yookassa">
-                                💳 Карта (Yookassa)
-                            </button>
-                            <button class="method-btn" data-method="robokassa">
-                                🏦 Robokassa
-                            </button>
-                        </div>
-                    </div>
-
                     <!-- Pay Button -->
                     <button class="btn btn-large btn-primary" id="pay-btn">
                         Оплатить
@@ -384,6 +388,22 @@
             </div>
 
         </main>
+
+        <!-- Mobile Bottom Nav -->
+        <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+            <button class="mobile-nav-item" data-page="dashboard">
+                <span class="mobile-nav-icon">🏠</span>
+                <span class="mobile-nav-label">Главная</span>
+            </button>
+            <button class="mobile-nav-item" data-page="generate">
+                <span class="mobile-nav-icon">✨</span>
+                <span class="mobile-nav-label">Генерировать</span>
+            </button>
+            <button class="mobile-nav-item" data-page="wallet">
+                <span class="mobile-nav-icon">💳</span>
+                <span class="mobile-nav-label">Пополнить</span>
+            </button>
+        </nav>
 
         <!-- Legal Footer -->
         <footer class="footer" id="footer-legal">

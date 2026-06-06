@@ -13,20 +13,14 @@ import IPCIDR from "ip-cidr";
 import {
   ADMIN_ID,
   BOT_TOKEN,
-  ROBOKASSA_MERCHANT_LOGIN,
-  ROBOKASSA_PASSWORD1,
-  ROBOKASSA_PASSWORD2,
-  ROBOKASSA_TEST_MODE,
   TOPUP_OPTIONS,
   WEB_SERVER_PORT,
   YOOKASSA_SECRET_KEY,
   YOOKASSA_SHOP_ID,
 } from "./config.js";
 import {
-  confirmRobokassaInvoice,
   creditManualBalance,
   creditYookassaPayment,
-  createRobokassaInvoice,
   getAdminGenerations,
   getAdminPayments,
   getAdminStats,
@@ -96,22 +90,6 @@ function rowsToJson(rows: Record<string, unknown>[]): unknown[] {
   );
 }
 
-function robokassaSig(parts: (string | number)[]): string {
-  return crypto.createHash("md5").update(parts.join(":")).digest("hex").toLowerCase();
-}
-
-function robokassaPaymentUrl(outSum: string, invId: number): string {
-  const sig = robokassaSig([ROBOKASSA_MERCHANT_LOGIN, outSum, invId, ROBOKASSA_PASSWORD1]);
-  const params = new URLSearchParams({
-    MerchantLogin: ROBOKASSA_MERCHANT_LOGIN,
-    OutSum: outSum,
-    InvId: String(invId),
-    SignatureValue: sig,
-    IsTest: ROBOKASSA_TEST_MODE ? "1" : "0",
-  });
-  return `https://auth.robokassa.ru/Merchant/Index.aspx?${params.toString()}`;
-}
-
 // YooKassa HTTP client (no SDK)
 function yookassaAuthHeader(): string {
   return `Basic ${Buffer.from(`${YOOKASSA_SHOP_ID}:${YOOKASSA_SECRET_KEY}`).toString("base64")}`;
@@ -176,7 +154,7 @@ export async function startWebServer(bot: Bot): Promise<void> {
   registerAuthRoutes(fastify);
   registerUploadRoute(fastify);
   registerGenerateRoute(fastify, bot);
-  registerWebPaymentRoutes(fastify, bot);
+  registerWebPaymentRoutes(fastify);
 
   // Frontend SPA (served only if frontend-dist exists)
   const fs = await import("node:fs");
@@ -205,11 +183,6 @@ export async function startWebServer(bot: Bot): Promise<void> {
   fastify.get("/pay_yookassa", (_req, reply) => {
     reply.header("ngrok-skip-browser-warning", "true");
     return reply.sendFile("pay_yookassa.html");
-  });
-
-  fastify.get("/pay_robokassa", (_req, reply) => {
-    reply.header("ngrok-skip-browser-warning", "true");
-    return reply.sendFile("pay_robokassa.html");
   });
 
   fastify.get("/admin", (_req, reply) => {
@@ -400,64 +373,6 @@ export async function startWebServer(bot: Bot): Promise<void> {
       .catch(() => undefined);
 
     return reply.code(200).send();
-  });
-
-  // Robokassa — create invoice
-  fastify.post("/api/robokassa/create", async (req, reply) => {
-    const body = req.body as { user_id?: unknown; amount?: unknown };
-    const userId = parseInt(String(body.user_id ?? ""), 10);
-    const amount = parseInt(String(body.amount ?? ""), 10);
-
-    if (isNaN(userId) || isNaN(amount)) {
-      return reply.code(400).send({ error: "user_id and amount are required" });
-    }
-    if (!(TOPUP_OPTIONS as readonly number[]).includes(amount)) {
-      return reply.code(400).send({ error: `Invalid amount. Allowed: ${TOPUP_OPTIONS.join(", ")}` });
-    }
-
-    const user = await getUser(userId);
-    if (!user) return reply.code(404).send({ error: "User not found" });
-
-    const invId = await createRobokassaInvoice(userId, amount);
-    const outSum = `${amount}.00`;
-    const paymentUrl = robokassaPaymentUrl(outSum, invId);
-    return reply.send({ payment_url: paymentUrl });
-  });
-
-  // Robokassa result callback (form POST)
-  fastify.post("/robokassa/result", async (req, reply) => {
-    const post = req.body as Record<string, string>;
-    const outSum = post["OutSum"];
-    const invIdRaw = post["InvId"];
-    const receivedSig = post["SignatureValue"]?.toLowerCase();
-
-    if (!outSum || !invIdRaw || !receivedSig) {
-      return reply.code(400).send("Bad request");
-    }
-
-    const invId = parseInt(invIdRaw, 10);
-    if (isNaN(invId)) return reply.code(400).send("Bad request");
-
-    const expectedSig = robokassaSig([outSum, invId, ROBOKASSA_PASSWORD2]);
-    if (expectedSig !== receivedSig) {
-      fastify.log.warn("Robokassa bad signature for InvId=%s", invId);
-      return reply.code(403).send("Bad sign");
-    }
-
-    const result = await confirmRobokassaInvoice(invId);
-    if (!result) return reply.send(`OK${invId}`);
-
-    await bot.api
-      .sendMessage(
-        result.userId,
-        `✅ Оплата через Robokassa прошла успешно!\n\n` +
-        `Зачислено: <b>${result.amount.toFixed(0)}₽</b>\n` +
-        `Ваш баланс: <b>${result.balance.toFixed(0)}₽</b>`,
-        { parse_mode: "HTML" },
-      )
-      .catch(() => undefined);
-
-    return reply.send(`OK${invId}`);
   });
 
   await fastify.listen({ port: WEB_SERVER_PORT, host: "0.0.0.0" });
