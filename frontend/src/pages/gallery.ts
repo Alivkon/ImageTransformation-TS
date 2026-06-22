@@ -4,20 +4,39 @@ import { notifications } from "../components/notifications.js";
 
 let currentPage = 0;
 let allLoaded = false;
+let currentQuery = "";
+let currentDateFilter = "";
+let listenersAttached = false;
 
 export async function initGallery(): Promise<void> {
   currentPage = 0;
   allLoaded = false;
+  currentQuery = "";
+  currentDateFilter = "";
 
   const grid = document.getElementById("gallery-grid");
   if (grid) grid.innerHTML = "";
 
+  const searchEl = document.getElementById("gallery-search") as HTMLInputElement | null;
+  const filterEl = document.getElementById("gallery-filter") as HTMLSelectElement | null;
+  if (searchEl) searchEl.value = "";
+  if (filterEl) filterEl.value = "";
+
   await loadPage();
 
-  document.getElementById("gallery-search")?.addEventListener("input", (e) => {
-    const q = (e.target as HTMLInputElement).value.toLowerCase();
-    filterItems(q);
-  });
+  if (!listenersAttached) {
+    listenersAttached = true;
+
+    searchEl?.addEventListener("input", (e) => {
+      currentQuery = (e.target as HTMLInputElement).value.toLowerCase();
+      filterItems();
+    });
+
+    filterEl?.addEventListener("change", (e) => {
+      currentDateFilter = (e.target as HTMLSelectElement).value;
+      filterItems();
+    });
+  }
 }
 
 async function loadPage(): Promise<void> {
@@ -49,6 +68,7 @@ function buildCard(g: Generation): HTMLElement {
   card.className = "gallery-item";
   card.dataset["status"] = g.status;
   card.dataset["prompt"] = g.prompt.toLowerCase();
+  card.dataset["date"] = g.created_at;
 
   if (g.status === "completed" && g.result_file_id && g.result_file_id.startsWith("/uploads/")) {
     card.innerHTML = `
@@ -70,10 +90,28 @@ function buildCard(g: Generation): HTMLElement {
   return card;
 }
 
-function filterItems(query: string): void {
+function filterItems(): void {
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfWeek = new Date(startOfDay);
+  startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
   document.querySelectorAll<HTMLElement>(".gallery-item").forEach((item) => {
     const prompt = item.dataset["prompt"] ?? "";
-    item.style.display = prompt.includes(query) ? "" : "none";
+    const dateStr = item.dataset["date"] ?? "";
+
+    const matchesQuery = !currentQuery || prompt.includes(currentQuery);
+
+    let matchesDate = true;
+    if (currentDateFilter && dateStr) {
+      const created = new Date(dateStr);
+      if (currentDateFilter === "today") matchesDate = created >= startOfDay;
+      else if (currentDateFilter === "week") matchesDate = created >= startOfWeek;
+      else if (currentDateFilter === "month") matchesDate = created >= startOfMonth;
+    }
+
+    item.style.display = matchesQuery && matchesDate ? "" : "none";
   });
 }
 

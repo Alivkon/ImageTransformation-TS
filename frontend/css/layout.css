@@ -164,7 +164,7 @@
 .section-hint {
     color: var(--medium-gray);
     font-size: var(--font-size-sm);
-    margin-bottom: var(--space-lg);
+    margin-bottom: var(--space-sm);
 }
 
 /* Cards */
@@ -263,7 +263,7 @@
 
 /* Form Groups */
 .form-group {
-    margin-bottom: var(--space-lg);
+    margin-bottom: var(--space-sm);
 }
 
 .form-group label {
@@ -316,6 +316,7 @@
     background-color: var(--lighter-gray);
     position: relative;
     overflow: hidden;
+    flex: 1;
 }
 
 .upload-zone:hover,
@@ -479,11 +480,11 @@
 .generate-wrapper {
     background-color: var(--white);
     border-radius: var(--radius-lg);
-    padding: var(--space-lg);
+    padding: var(--space-md);
     box-shadow: var(--shadow-sm);
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--space-2xl);
+    gap: var(--space-lg);
 }
 
 @media (min-width: 768px) {
@@ -496,25 +497,26 @@
 .prompt-section {
     display: flex;
     flex-direction: column;
-    gap: var(--space-md);
+    gap: var(--space-sm);
 }
 
 .upload-section h2,
 .prompt-section h2 {
     margin-top: 0;
+    margin-bottom: var(--space-xs);
 }
 
 /* Suggestions */
 .suggestions {
     background-color: var(--lighter-gray);
-    padding: var(--space-lg);
+    padding: 0 var(--space-md) var(--space-sm);
     border-radius: var(--radius-lg);
-    margin-top: var(--space-lg);
+    margin-top: var(--space-xs);
 }
 
 .suggestions-title {
     font-weight: var(--font-weight-semibold);
-    margin-bottom: var(--space-md);
+    margin-bottom: var(--space-sm);
 }
 
 .suggestion-buttons {
@@ -544,13 +546,13 @@
 .generate-action {
     grid-column: 1 / -1;
     text-align: center;
-    margin-top: var(--space-lg);
+    margin-top: var(--space-sm);
 }
 
 .action-hint {
     font-size: var(--font-size-sm);
     color: var(--medium-gray);
-    margin-top: var(--space-md);
+    margin-top: var(--space-sm);
 }
 
 /* Results */
@@ -871,7 +873,6 @@
 }
 
 .footer-contacts,
-.footer-requisites,
 .footer-links {
     font-size: 12px;
     color: var(--text-secondary, #888);

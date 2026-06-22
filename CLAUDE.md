@@ -9,7 +9,7 @@ yarn install
 yarn build
 yarn start
 ```
-После изменения кода, для перезапуска бота используйте:
+После каждого изменения кода, для перезапуска бота используй:
 
 ```bash
 sudo docker compose build bot && docker compose up -d bot

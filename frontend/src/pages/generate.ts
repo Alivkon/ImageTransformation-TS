@@ -1,6 +1,8 @@
 import { PhotoUploader } from "../components/uploader.js";
 import { notifications } from "../components/notifications.js";
 import { uploadPhoto, startGeneration, getGenerationStatus, sleep, getToken, getBalance } from "../api.js";
+import enhanceRaw from "../prompts/enhance.md?raw";
+import graniteRaw from "../prompts/granite.md?raw";
 
 export interface GenerationResult {
   generationId: number;
@@ -12,8 +14,13 @@ export interface GenerationResult {
 
 type Navigate = (page: string, data?: GenerationResult) => void;
 
+const ENHANCE_TEXT = enhanceRaw.trim() + " ";
+const GRANITE_TEXT = graniteRaw.trim();
+
 const uploader = new PhotoUploader();
 let hasPhoto = false;
+let enhanceActive = false;
+let graniteActive = false;
 let generateInitialized = false;
 let currentOnNeedAuth: ((onSuccess: () => void) => void) | undefined;
 let currentOnGenerationStarted: (() => Promise<void>) | undefined;
@@ -51,14 +58,12 @@ export function initGenerate(
   });
 
   const promptInput = document.getElementById("prompt-input") as HTMLTextAreaElement | null;
-  const charCount = document.getElementById("char-count");
-  const MAX_CHARS = 500;
+  const MAX_CHARS = 5000;
 
   promptInput?.addEventListener("input", () => {
     if (promptInput.value.length > MAX_CHARS) {
       promptInput.value = promptInput.value.slice(0, MAX_CHARS);
     }
-    if (charCount) charCount.textContent = String(promptInput.value.length);
     updateGenerateBtn();
   });
 
@@ -67,10 +72,24 @@ export function initGenerate(
       const suggestion = btn.dataset["suggestion"] ?? "";
       if (promptInput) {
         promptInput.value = suggestion;
-        if (charCount) charCount.textContent = String(suggestion.length);
         updateGenerateBtn();
       }
     });
+  });
+
+  const enhanceBtn = document.getElementById("enhance-portrait-btn");
+  const graniteBtn = document.getElementById("granite-btn");
+
+  enhanceBtn?.addEventListener("click", () => {
+    enhanceActive = !enhanceActive;
+    enhanceBtn.classList.toggle("active", enhanceActive);
+    updateGenerateBtn();
+  });
+
+  graniteBtn?.addEventListener("click", () => {
+    graniteActive = !graniteActive;
+    graniteBtn.classList.toggle("active", graniteActive);
+    updateGenerateBtn();
   });
 
   document.getElementById("generate-btn")?.addEventListener("click", () => {
@@ -82,16 +101,19 @@ function updateGenerateBtn(): void {
   const btn = document.getElementById("generate-btn") as HTMLButtonElement | null;
   if (!btn) return;
   const prompt = (document.getElementById("prompt-input") as HTMLTextAreaElement | null)?.value.trim() ?? "";
-  btn.disabled = !hasPhoto || prompt.length === 0;
+  btn.disabled = !hasPhoto || (prompt.length === 0 && !enhanceActive && !graniteActive);
 }
 
 async function handleGenerate(navigate: Navigate): Promise<void> {
   const photo = uploader.getPhoto();
   const promptEl = document.getElementById("prompt-input") as HTMLTextAreaElement | null;
-  const prompt = promptEl?.value.trim() ?? "";
+  const basePrompt = promptEl?.value.trim() ?? "";
+  const prompt = (enhanceActive ? ENHANCE_TEXT : "")
+               + (graniteActive ? GRANITE_TEXT : "")
+               + basePrompt;
 
   if (!photo) { notifications.error("Пожалуйста, загрузите фото"); return; }
-  if (!prompt) { notifications.error("Пожалуйста, введите описание"); return; }
+  if (!basePrompt && !enhanceActive && !graniteActive) { notifications.error("Пожалуйста, введите описание"); return; }
 
   if (!getToken()) {
     if (currentOnNeedAuth) currentOnNeedAuth(() => void handleGenerate(navigate));

@@ -654,9 +654,12 @@ body {
 
 /* ── Mobile Navigation Bars ─────────────────────────────────── */
 
-.mobile-top-nav,
-.mobile-bottom-nav {
+.mobile-top-nav {
     display: none;
+}
+
+.mobile-bottom-nav {
+    display: none !important;
 }
 
 @media (max-width: 639px) {
@@ -671,19 +674,6 @@ body {
         z-index: var(--z-fixed);
     }
 
-    .mobile-bottom-nav {
-        display: flex;
-        justify-content: space-around;
-        background-color: var(--white);
-        border-top: 1px solid var(--border-gray);
-        padding: var(--space-xs) 0;
-        padding-bottom: max(var(--space-xs), env(safe-area-inset-bottom));
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        z-index: var(--z-fixed);
-    }
 
     .mobile-nav-item {
         display: flex;

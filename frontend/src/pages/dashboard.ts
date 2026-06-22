@@ -34,12 +34,6 @@ function renderRecentGallery(gens: Generation[], navigate: Navigate): void {
     })
     .join("");
 
-  grid.querySelectorAll(".gallery-item").forEach((item, idx) => {
-    item.addEventListener("click", () => {
-      const gen = gens[idx];
-      if (gen && gen.status === "completed") navigate("results");
-    });
-  });
 }
 
 export async function initDashboard(user: User, navigate: Navigate): Promise<void> {

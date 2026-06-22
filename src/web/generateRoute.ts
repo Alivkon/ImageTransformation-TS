@@ -57,8 +57,8 @@ export function registerGenerateRoute(fastify: FastifyInstance, bot: Bot): void 
     if (!uploadUrl || !prompt) {
       return reply.code(400).send({ error: "upload_url and prompt are required" });
     }
-    if (prompt.length > 500) {
-      return reply.code(400).send({ error: "Prompt too long (max 500 chars)" });
+    if (prompt.length > 5000) {
+      return reply.code(400).send({ error: "Prompt too long (max 5000 chars)" });
     }
 
     const dbUser = await getUser(user.user_id);

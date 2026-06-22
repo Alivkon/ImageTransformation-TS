@@ -165,8 +165,7 @@
                         <!-- Photo Upload Section -->
                         <div class="upload-section">
                             <h2>📸 Загрузите фото</h2>
-                            <p class="section-hint">Загрузите фото с четким изображением вашего лица</p>
-
+                            <p class="section-hint">Загрузите фото с изображением лица</p>
                             <div class="upload-zone" id="upload-zone">
                                 <input type="file" id="photo-input" accept="image/*" hidden>
                                 <div class="upload-placeholder" id="upload-placeholder">
@@ -190,31 +189,47 @@
 
                         <!-- Prompt Section -->
                         <div class="prompt-section">
-                            <h2>✍️ Описание трансформации</h2>
-                            <p class="section-hint">Опишите, как вы хотите изменить фото</p>
-
+                            <h2>✍️ Описание изменений</h2>
+                            <p class="section-hint">Напишите, как вы хотите изменить фото в поле ниже</p>
                             <div class="form-group">
-                                <label for="prompt-input">Ваше описание:</label>
                                 <textarea
                                     id="prompt-input"
                                     class="textarea"
                                     placeholder="Например: Деловой костюм, белый офисный фон, уверенная поза"
                                     rows="4"
                                 ></textarea>
-                                <div class="char-count">
-                                    <span id="char-count">0</span> / 500 символов
-                                </div>
+
+                            </div>
+
+                            <!-- Enhance Portrait Toggle -->
+                            <div class="enhance-row">
+                                <button
+                                    type="button"
+                                    id="enhance-portrait-btn"
+                                    class="btn btn-outline enhance-portrait-btn"
+                                    title="Добавляемый текст к промпту: REMASTER AND UPSCALE. Priority: High-fidelity facial reconstruction. Maintain 100% identical facial structure, bone shape, and expression of the person in the source image. CRITICAL: Avoid all skin smoothing, airbrushing, or artificial blurring. Render hyper-realistic epidermal textures, including visible skin pores, fine natural lines, and subtle micro-details. Eyes must be crystal clear with sharp iris details and individual eyelashes. Hair must have distinct, sharp strands. Lighting: Professional studio key light. Technical specs: Shot on 85mm macro lens, f/2.8, ISO 100, 8k resolution, photorealistic masterpiece. "
+                                >
+                                    ✨ Улучшить портрет
+                                </button>
+                                <button
+                                    type="button"
+                                    id="granite-btn"
+                                    class="btn btn-outline enhance-portrait-btn"
+                                    title="Добавляемый текст к промпту: A perfectly polished, flawless black marble slab..."
+                                >
+                                    🪨 На чёрном граните
+                                </button>
                             </div>
 
                             <!-- Suggestions -->
                             <div class="suggestions">
-                                <p class="suggestions-title">💡 Примеры:</p>
+                                <p class="suggestions-title">💡 Готовые шаблоны:</p>
                                 <div class="suggestion-buttons">
-                                    <button type="button" class="suggestion-btn" data-suggestion="Деловой костюм, белый офисный фон, уверенная поза">
-                                        Деловой образ
+                                    <button type="button" class="suggestion-btn" data-suggestion="Черный пиджак, белая рубашка, галстук, белый фон, уверенная поза">
+                                        Строгий образ
                                     </button>
-                                    <button type="button" class="suggestion-btn" data-suggestion="Спортивная форма, стадион, динамичная поза">
-                                        Спортивный стиль
+                                    <button type="button" class="suggestion-btn" data-suggestion="Парадная форма российской армии без головного убора, без медалей и наград, нейтральный серый фон, строгая осанка">
+                                        Военная форма
                                     </button>
                                     <button type="button" class="suggestion-btn" data-suggestion="Вечернее платье, роскошный интерьер, мягкий свет">
                                         Вечерний наряд
@@ -392,22 +407,6 @@
 
         </main>
 
-        <!-- Mobile Bottom Nav -->
-        <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
-            <button class="mobile-nav-item" data-page="dashboard">
-                <span class="mobile-nav-icon">🏠</span>
-                <span class="mobile-nav-label">Главная</span>
-            </button>
-            <button class="mobile-nav-item" data-page="generate">
-                <span class="mobile-nav-icon">✨</span>
-                <span class="mobile-nav-label">Генерировать</span>
-            </button>
-            <button class="mobile-nav-item" data-page="wallet">
-                <span class="mobile-nav-icon">💳</span>
-                <span class="mobile-nav-label">Пополнить</span>
-            </button>
-        </nav>
-
         <!-- Legal Footer -->
         <footer class="footer" id="footer-legal">
             <div class="footer-inner">
@@ -415,9 +414,6 @@
                     <a href="mailto:hello@imagetransformation.ru">hello@imagetransformation.ru</a>
                     &nbsp;·&nbsp;
                     <a href="https://t.me/AlexAIBotMaster" target="_blank">@AlexAIBotMaster</a>
-                </div>
-                <div class="footer-requisites">
-                    Самозанятый Конищев Александр Иванович · ИНН&nbsp;301610174061
                 </div>
                 <div class="footer-links">
                     <a href="/oferta" target="_blank">Оферта</a>

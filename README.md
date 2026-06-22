@@ -43,6 +43,11 @@ docker compose up -d --build
 docker compose ps
 docker compose logs -f bot
 ```
+ # Изменения на сервере
+```bas
+ # Сборка и перезапуск только программного кода без пересборки БД
+yarn build && sudo docker compose build bot && docker compose up -d bot
+```
 
 После запуска:
 - Бот работает в контейнере `imagetransformationtgbot_ts`
