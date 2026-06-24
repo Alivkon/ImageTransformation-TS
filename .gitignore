@@ -3,4 +3,5 @@ node_modules/
 dist/
 *.js.map
 *.txt
-
+docker-compose.local.yml
+.env.local*
