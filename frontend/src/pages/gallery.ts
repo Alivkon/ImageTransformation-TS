@@ -2,6 +2,114 @@ import { getGenerations } from "../api.js";
 import type { Generation } from "../types.js";
 import { notifications } from "../components/notifications.js";
 
+export function initCompare(): void {
+  const overlay = document.getElementById("compare-overlay");
+  const container = document.getElementById("compare-container") as HTMLElement | null;
+  const imgBefore = document.getElementById("compare-img-before") as HTMLImageElement | null;
+  const imgAfter = document.getElementById("compare-img-after") as HTMLImageElement | null;
+  const divider = document.getElementById("compare-divider") as HTMLElement | null;
+  const closeBtn = document.getElementById("compare-close-btn") as HTMLElement | null;
+
+  if (!overlay || !container || !imgBefore || !imgAfter || !divider || !closeBtn) return;
+  if (overlay.dataset["initialized"] === "true") return;
+  overlay.dataset["initialized"] = "true";
+
+  let isDragging = false;
+
+  function setSplit(pct: number): void {
+    const safePct = Math.max(2, Math.min(98, pct));
+    imgBefore.style.clipPath = `inset(0 ${100 - safePct}% 0 0)`;
+    divider.style.left = `${safePct}%`;
+  }
+
+  function clientXToPct(clientX: number): number {
+    const rect = container.getBoundingClientRect();
+    return ((clientX - rect.left) / rect.width) * 100;
+  }
+
+  function loadImg(img: HTMLImageElement, src: string): Promise<void> {
+    return new Promise((resolve) => {
+      if (img.src.endsWith(src) && img.complete && img.naturalWidth > 0) {
+        resolve();
+        return;
+      }
+
+      img.onload = () => {
+        img.onload = null;
+        img.onerror = null;
+        resolve();
+      };
+      img.onerror = () => {
+        img.onload = null;
+        img.onerror = null;
+        resolve();
+      };
+      img.src = src;
+    });
+  }
+
+  async function open(beforeSrc: string, afterSrc: string): Promise<void> {
+    await Promise.all([loadImg(imgBefore, beforeSrc), loadImg(imgAfter, afterSrc)]);
+
+    const width = imgBefore.naturalWidth || 800;
+    const height = imgBefore.naturalHeight || 600;
+    const scale = Math.min(window.innerWidth / width, window.innerHeight / height);
+
+    container.style.width = `${Math.round(width * scale)}px`;
+    container.style.height = `${Math.round(height * scale)}px`;
+
+    setSplit(50);
+    overlay.setAttribute("aria-hidden", "false");
+    overlay.classList.add("active");
+    document.body.style.overflow = "hidden";
+  }
+
+  function close(): void {
+    overlay.classList.remove("active");
+    overlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+  }
+
+  closeBtn.addEventListener("click", close);
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) close();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") close();
+  });
+
+  container.addEventListener("mousedown", (event) => {
+    isDragging = true;
+    setSplit(clientXToPct(event.clientX));
+    event.preventDefault();
+  });
+  window.addEventListener("mousemove", (event) => {
+    if (isDragging) setSplit(clientXToPct(event.clientX));
+  });
+  window.addEventListener("mouseup", () => {
+    isDragging = false;
+  });
+
+  container.addEventListener("touchstart", (event) => {
+    isDragging = true;
+    setSplit(clientXToPct(event.touches[0].clientX));
+  }, { passive: true });
+  window.addEventListener("touchmove", (event) => {
+    if (isDragging) setSplit(clientXToPct(event.touches[0].clientX));
+  }, { passive: true });
+  window.addEventListener("touchend", () => {
+    isDragging = false;
+  });
+
+  document.addEventListener("click", (event) => {
+    const card = (event.target as HTMLElement | null)?.closest<HTMLElement>(".before-after-card");
+    if (!card) return;
+
+    const images = card.querySelectorAll<HTMLImageElement>(".case-img");
+    if (images.length >= 2) void open(images[0].src, images[1].src);
+  });
+}
+
 let currentPage = 0;
 let allLoaded = false;
 let currentQuery = "";

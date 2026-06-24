@@ -121,6 +121,10 @@
     background-color: var(--light-gray);
 }
 
+#theme-toggle {
+    display: none;
+}
+
 /* Main Content */
 .main-content {
     flex: 1;
@@ -806,6 +810,58 @@
     text-align: center;
     padding: var(--space-lg);
     color: var(--medium-gray);
+}
+
+.gallery-cases {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+}
+
+.before-after-card {
+    background: var(--white);
+    border: 1px solid var(--border-gray);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.gallery-case-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.case-image-wrap {
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: var(--lighter-gray);
+}
+
+.case-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.case-label {
+    position: absolute;
+    top: var(--space-sm);
+    left: var(--space-sm);
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-size: 11px;
+    font-weight: var(--font-weight-semibold);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+}
+
+.case-caption {
+    padding: var(--space-md);
+    font-size: var(--font-size-sm);
+    color: var(--medium-gray);
+    font-weight: var(--font-weight-medium);
 }
 
 /* Status Message */

@@ -17,6 +17,7 @@ import {
   WEB_SERVER_PORT,
   YOOKASSA_SECRET_KEY,
   YOOKASSA_SHOP_ID,
+  YOOKASSA_SKIP_IP_CHECK,
 } from "./config.js";
 import {
   creditManualBalance,
@@ -327,14 +328,23 @@ export async function startWebServer(bot: Bot): Promise<void> {
   fastify.post("/yookassa/webhook", async (req, reply) => {
     const forwarded = req.headers["x-forwarded-for"];
     const clientIp = (typeof forwarded === "string" ? forwarded.split(",")[0]?.trim() : req.ip) ?? req.ip;
-
-    if (!isYookassaIp(clientIp)) {
+    fastify.log.info("YooKassa webhook received from IP=%s, x-forwarded-for=%s", clientIp, forwarded);
+    if (!YOOKASSA_SKIP_IP_CHECK && !isYookassaIp(clientIp)) {
       fastify.log.warn("Webhook from unknown IP: %s", clientIp);
       return reply.code(403).send();
     }
+    if (YOOKASSA_SKIP_IP_CHECK) {
+      fastify.log.warn("YOOKASSA_SKIP_IP_CHECK enabled — skipping IP whitelist check");
+    }
 
     const data = req.body as Record<string, unknown>;
+    fastify.log.info("YooKassa webhook body: %o", data);
     if (data["type"] !== "notification" || data["event"] !== "payment.succeeded") {
+      fastify.log.info(
+        "YooKassa webhook ignored: type=%s event=%s",
+        data["type"],
+        data["event"],
+      );
       return reply.code(200).send();
     }
 
@@ -355,6 +365,10 @@ export async function startWebServer(bot: Bot): Promise<void> {
     const amount = parseFloat(payment.amount?.value ?? "0");
 
     if (!userId) {
+      fastify.log.error(
+        "YooKassa webhook has no user_id in metadata: %o",
+        payment.metadata ?? {},
+      );
       fastify.log.error("No user_id in payment metadata: %s", paymentId);
       return reply.code(200).send();
     }

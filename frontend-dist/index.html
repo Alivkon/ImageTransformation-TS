@@ -8,8 +8,8 @@
     <title>ИИ Генератор и Редактор Фото | Image Transformation</title>
     
     <!-- CSS -->
-  <script type="module" crossorigin src="/assets/index-CVltqm_u.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-D5r_1AiH.css">
+  <script type="module" crossorigin src="/assets/index-xf7_uutO.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-CrEm1lmp.css">
 </head>
 <body>
     <!-- App Container -->
@@ -33,7 +33,7 @@
                         <span>✨ Генерировать</span>
                     </button>
                     <button class="nav-item" data-page="gallery">
-                        <span>🎨 Галерея</span>
+                        <span>📂 Примеры</span>
                     </button>
                     <button class="nav-item" data-page="wallet">
                         <span>💳Оплатить</span>
@@ -195,20 +195,38 @@
                                     placeholder="Например: Деловой костюм, белый офисный фон, уверенная поза"
                                     rows="4"
                                 ></textarea>
-                                <div class="char-count">
-                                    <span id="char-count">0</span> / 800 символов
-                                </div>
+
+                            </div>
+
+                            <!-- Enhance Portrait Toggle -->
+                            <div class="enhance-row">
+                                <button
+                                    type="button"
+                                    id="enhance-portrait-btn"
+                                    class="btn btn-outline enhance-portrait-btn"
+                                    title="Добавляемый текст к промпту: REMASTER AND UPSCALE. Priority: High-fidelity facial reconstruction. Maintain 100% identical facial structure, bone shape, and expression of the person in the source image. CRITICAL: Avoid all skin smoothing, airbrushing, or artificial blurring. Render hyper-realistic epidermal textures, including visible skin pores, fine natural lines, and subtle micro-details. Eyes must be crystal clear with sharp iris details and individual eyelashes. Hair must have distinct, sharp strands. Lighting: Professional studio key light. Technical specs: Shot on 85mm macro lens, f/2.8, ISO 100, 8k resolution, photorealistic masterpiece. "
+                                >
+                                    ✨ Улучшить портрет
+                                </button>
+                                <button
+                                    type="button"
+                                    id="granite-btn"
+                                    class="btn btn-outline enhance-portrait-btn"
+                                    title="Добавляемый текст к промпту: A perfectly polished, flawless black marble slab..."
+                                >
+                                    🪨 На чёрном граните
+                                </button>
                             </div>
 
                             <!-- Suggestions -->
                             <div class="suggestions">
                                 <p class="suggestions-title">💡 Готовые шаблоны:</p>
                                 <div class="suggestion-buttons">
-                                    <button type="button" class="suggestion-btn" data-suggestion="Деловой костюм, белый офисный фон, уверенная поза">
-                                        Деловой образ
+                                    <button type="button" class="suggestion-btn" data-suggestion="Черный пиджак, белая рубашка, галстук, белый фон, уверенная поза">
+                                        Строгий образ
                                     </button>
-                                    <button type="button" class="suggestion-btn" data-suggestion="Спортивная форма, стадион, динамичная поза">
-                                        Спортивный стиль
+                                    <button type="button" class="suggestion-btn" data-suggestion="Парадная форма российской армии без головного убора, без медалей и наград, нейтральный серый фон, строгая осанка">
+                                        Военная форма
                                     </button>
                                     <button type="button" class="suggestion-btn" data-suggestion="Вечернее платье, роскошный интерьер, мягкий свет">
                                         Вечерний наряд
@@ -294,7 +312,166 @@
             <!-- Gallery Page -->
             <section class="page" id="page-gallery" data-page="gallery">
                 <div class="container">
-                    <h2>🎨 Галерея результатов</h2>
+                    <h2>📂 Примеры работ</h2>
+
+                    <div class="gallery-cases">
+                        <div class="before-after-card">
+                            <div class="gallery-case-pair">
+                                <div class="case-image-wrap">
+                                    <div class="case-label">До</div>
+                                    <img class="case-img" src="/images/cases/case1-befor.jpg" alt="До">
+                                </div>
+                                <div class="case-image-wrap">
+                                    <div class="case-label">После</div>
+                                    <img class="case-img" src="/images/cases/case1-after.jpg" alt="После">
+                                </div>
+                            </div>
+                            <div class="case-caption">Колоризация чёрно-белого фото</div>
+                        </div>
+                        <div class="before-after-card">
+                            <div class="gallery-case-pair">
+                                <div class="case-image-wrap">
+                                    <div class="case-label">До</div>
+                                    <img class="case-img" src="/images/cases/case2-befor.jpg" alt="До">
+                                </div>
+                                <div class="case-image-wrap">
+                                    <div class="case-label">После</div>
+                                    <img class="case-img" src="/images/cases/case2-after.png" alt="После">
+                                </div>
+                            </div>
+                            <div class="case-caption">Подготовка под лазерную гравировку</div>
+                        </div>
+                        <div class="before-after-card">
+                            <div class="gallery-case-pair">
+                                <div class="case-image-wrap">
+                                    <div class="case-label">До</div>
+                                    <img class="case-img" src="/images/cases/case3-befor.jpg" alt="До">
+                                </div>
+                                <div class="case-image-wrap">
+                                    <div class="case-label">После</div>
+                                    <img class="case-img" src="/images/cases/case3-after.png" alt="После">
+                                </div>
+                            </div>
+                            <div class="case-caption">Удаление повреждений и шума</div>
+                        </div>
+                        <div class="before-after-card">
+                            <div class="gallery-case-pair">
+                                <div class="case-image-wrap">
+                                    <div class="case-label">До</div>
+                                    <img class="case-img" src="/images/cases/case4-befor.jpg" alt="До">
+                                </div>
+                                <div class="case-image-wrap">
+                                    <div class="case-label">После</div>
+                                    <img class="case-img" src="/images/cases/case4-after.jpeg" alt="После">
+                                </div>
+                            </div>
+                            <div class="case-caption">Подготовка фото для фотокерамики</div>
+                        </div>
+                        <div class="before-after-card">
+                            <div class="gallery-case-pair">
+                                <div class="case-image-wrap">
+                                    <div class="case-label">До</div>
+                                    <img class="case-img" src="/images/cases/case6-befor.jpg" alt="До">
+                                </div>
+                                <div class="case-image-wrap">
+                                    <div class="case-label">После</div>
+                                    <img class="case-img" src="/images/cases/case6-after.png" alt="После">
+                                </div>
+                            </div>
+                            <div class="case-caption">Реставрация портрета</div>
+                        </div>
+                        <div class="before-after-card">
+                            <div class="gallery-case-pair">
+                                <div class="case-image-wrap">
+                                    <div class="case-label">До</div>
+                                    <img class="case-img" src="/images/cases/case7-befor.jpg" alt="До">
+                                </div>
+                                <div class="case-image-wrap">
+                                    <div class="case-label">После</div>
+                                    <img class="case-img" src="/images/cases/case7-after.jpg" alt="После">
+                                </div>
+                            </div>
+                            <div class="case-caption">Подготовка к гравировке</div>
+                        </div>
+                        <div class="before-after-card">
+                            <div class="gallery-case-pair">
+                                <div class="case-image-wrap">
+                                    <div class="case-label">До</div>
+                                    <img class="case-img" src="/images/cases/case8-befor.jpg" alt="До">
+                                </div>
+                                <div class="case-image-wrap">
+                                    <div class="case-label">После</div>
+                                    <img class="case-img" src="/images/cases/case8-after.png" alt="После">
+                                </div>
+                            </div>
+                            <div class="case-caption">Восстановление деталей</div>
+                        </div>
+                        <div class="before-after-card">
+                            <div class="gallery-case-pair">
+                                <div class="case-image-wrap">
+                                    <div class="case-label">До</div>
+                                    <img class="case-img" src="/images/cases/case9-befor.jpg" alt="До">
+                                </div>
+                                <div class="case-image-wrap">
+                                    <div class="case-label">После</div>
+                                    <img class="case-img" src="/images/cases/case9-after.png" alt="После">
+                                </div>
+                            </div>
+                            <div class="case-caption">Повышение чёткости и качества</div>
+                        </div>
+                        <div class="before-after-card">
+                            <div class="gallery-case-pair">
+                                <div class="case-image-wrap">
+                                    <div class="case-label">До</div>
+                                    <img class="case-img" src="/images/cases/case10-befor.jpg" alt="До">
+                                </div>
+                                <div class="case-image-wrap">
+                                    <div class="case-label">После</div>
+                                    <img class="case-img" src="/images/cases/case10-after.png" alt="После">
+                                </div>
+                            </div>
+                            <div class="case-caption">Реставрация архивного фото</div>
+                        </div>
+                        <div class="before-after-card">
+                            <div class="gallery-case-pair">
+                                <div class="case-image-wrap">
+                                    <div class="case-label">До</div>
+                                    <img class="case-img" src="/images/cases/case11-befor.png" alt="До">
+                                </div>
+                                <div class="case-image-wrap">
+                                    <div class="case-label">После</div>
+                                    <img class="case-img" src="/images/cases/case11-after.png" alt="После">
+                                </div>
+                            </div>
+                            <div class="case-caption">Подготовка бытового фото для памятника</div>
+                        </div>
+                        <div class="before-after-card">
+                            <div class="gallery-case-pair">
+                                <div class="case-image-wrap">
+                                    <div class="case-label">До</div>
+                                    <img class="case-img" src="/images/cases/case12-befor.jpg" alt="До">
+                                </div>
+                                <div class="case-image-wrap">
+                                    <div class="case-label">После</div>
+                                    <img class="case-img" src="/images/cases/case12-after.jpg" alt="После">
+                                </div>
+                            </div>
+                            <div class="case-caption">Подготовка к фотокерамике</div>
+                        </div>
+                        <div class="before-after-card">
+                            <div class="gallery-case-pair">
+                                <div class="case-image-wrap">
+                                    <div class="case-label">До</div>
+                                    <img class="case-img" src="/images/cases/case13-befor.png" alt="До">
+                                </div>
+                                <div class="case-image-wrap">
+                                    <div class="case-label">После</div>
+                                    <img class="case-img" src="/images/cases/case13-after.png" alt="После">
+                                </div>
+                            </div>
+                            <div class="case-caption">Подготовка под гравировку</div>
+                        </div>
+                    </div>
                     
                     <!-- Filter Section -->
                     <div class="gallery-filters">
@@ -386,22 +563,6 @@
 
         </main>
 
-        <!-- Mobile Bottom Nav -->
-        <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
-            <button class="mobile-nav-item" data-page="dashboard">
-                <span class="mobile-nav-icon">🏠</span>
-                <span class="mobile-nav-label">Главная</span>
-            </button>
-            <button class="mobile-nav-item" data-page="generate">
-                <span class="mobile-nav-icon">✨</span>
-                <span class="mobile-nav-label">Генерировать</span>
-            </button>
-            <button class="mobile-nav-item" data-page="wallet">
-                <span class="mobile-nav-icon">💳</span>
-                <span class="mobile-nav-label">Пополнить</span>
-            </button>
-        </nav>
-
         <!-- Legal Footer -->
         <footer class="footer" id="footer-legal">
             <div class="footer-inner">
@@ -421,8 +582,26 @@
         <!-- Toast Notifications -->
         <div id="toast-container" class="toast-container"></div>
 
-        <!-- Modal Dialogs -->
-        <div id="modals"></div>
+    <!-- Modal Dialogs -->
+    <div id="modals"></div>
+
+    <div id="compare-overlay" class="compare-overlay" aria-hidden="true">
+        <button class="compare-close-btn" id="compare-close-btn" aria-label="Закрыть">✕</button>
+        <div class="compare-container" id="compare-container">
+            <img class="compare-img-before" id="compare-img-before" alt="До">
+            <img class="compare-img-after" id="compare-img-after" alt="После">
+            <div class="compare-divider" id="compare-divider">
+                <div class="compare-handle">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6" transform="translate(-3,0)"/>
+                        <polyline points="9 18 15 12 9 6" transform="translate(3,0)"/>
+                    </svg>
+                </div>
+            </div>
+            <span class="compare-badge compare-badge-before">До</span>
+            <span class="compare-badge compare-badge-after">После</span>
+        </div>
+    </div>
 
     </div>
 

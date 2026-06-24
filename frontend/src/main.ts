@@ -4,7 +4,7 @@ import { initDashboard } from "./pages/dashboard.js";
 import { initGenerate } from "./pages/generate.js";
 import type { GenerationResult } from "./pages/generate.js";
 import { initResults } from "./pages/results.js";
-import { initGallery } from "./pages/gallery.js";
+import { initCompare, initGallery } from "./pages/gallery.js";
 import { initWallet, updateWalletBalance } from "./pages/wallet.js";
 import { getMe, login, register, logout, setToken, resendVerification, sleep, getBalance, confirmYookassaPayment } from "./api.js";
 import type { User } from "./types.js";
@@ -323,6 +323,7 @@ async function main(): Promise<void> {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  initCompare();
   void main();
 });
 
