@@ -115,6 +115,7 @@ export interface DbUser {
   user_id: number;
   username: string | null;
   first_name: string;
+  email: string | null;
   balance: number;
   free_generations: number;
   total_generations: number;

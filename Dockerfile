@@ -30,6 +30,8 @@ RUN yarn install --frozen-lockfile --production
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/frontend-dist ./frontend-dist
 
+RUN mkdir -p /app/uploads
+
 # Expose port
 EXPOSE 8080
 

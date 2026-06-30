@@ -30,6 +30,8 @@ services:
     environment:
       # Переопределяем DATABASE_URL внутри контейнера — используем имя сервиса, не localhost
       DATABASE_URL: postgresql://imagetransformer:${POSTGRES_PASSWORD}@postgre_imagetransformer/imagetransformer
+    volumes:
+      - ./uploads:/app/uploads
     expose:
       - "8080"
     depends_on:
