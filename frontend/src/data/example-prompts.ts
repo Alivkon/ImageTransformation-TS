@@ -1,0 +1,122 @@
+export interface ExampleCase {
+  id: string;
+  title: string;
+  beforeImage: string;
+  afterImage: string;
+  prompt: string;
+}
+
+export const exampleCases: ExampleCase[] = [
+  {
+    id: "vozvrashchaem-zhizn-starym-snimkam",
+    title: "Возвращаем жизнь старым снимкам",
+    beforeImage: "/images/examples/vozvrashchaem-zhizn-starym-snimkam/before.jpg",
+    afterImage: "/images/examples/vozvrashchaem-zhizn-starym-snimkam/after.jpg",
+    prompt: "Реставрация фотографии портрета пожилой женщины 1960-х годов. Удаление всех трещин, желтых пятен, царапин и выцветания. Восстановление недостающих деталей лица, повышение резкости глаз и текстуры кожи. Результат: чистый, высококачественный черно-белый портрет студийного качества, фотореалистичный.",
+  },
+  {
+    id: "semeynaya-istoriya-v-tsvete",
+    title: "Семейная история в цвете",
+    beforeImage: "/images/examples/semeynaya-istoriya-v-tsvete/before.png",
+    afterImage: "/images/examples/semeynaya-istoriya-v-tsvete/after.png",
+    prompt: "Раскрасьте черно-белую советскую семейную фотографию 1970-х годов, сделанную на даче на открытом воздухе. Добавьте теплые летние цвета: зеленую траву, голубое небо, типичные для 70-х годов цвета одежды (коричневый, горчичный, светло-голубой). Естественные оттенки кожи, мягкий солнечный свет. Фотореалистичный результат, сохранившая атмосферу пленочной эпохи.",
+  },
+  {
+    id: "vosstanovim-dazhe-to-chto-kazalos-poteryannym",
+    title: "Восстановим даже то, что казалось потерянным",
+    beforeImage: "/images/examples/vosstanovim-dazhe-to-chto-kazalos-poteryannym/before.jpg",
+    afterImage: "/images/examples/vosstanovim-dazhe-to-chto-kazalos-poteryannym/after.jpg",
+    prompt: "Восстановите сильно поврежденный старинный портрет пары: реконструируйте недостающую половину изображения, используя контекстные подсказки из оставшейся половины. Удалите следы повреждений от воды, складки и изменение цвета. Правдоподобно воссоздайте тело и лицо отсутствующего человека. Фотореалистичный черно-белый результат, четкие детали.",
+  },
+  {
+    id: "portret-praprababushki-kak-budto-snyato-vchera",
+    title: "Портрет прапрабабушки - как будто снято вчера",
+    beforeImage: "/images/examples/portret-praprababushki-kak-budto-snyato-vchera/before.jpg",
+    afterImage: "/images/examples/portret-praprababushki-kak-budto-snyato-vchera/after.png",
+    prompt: "Ультрасовременная реставрация русского портрета дореволюционной эпохи 1900-х годов в овальной раме. Восстановление утраченных деталей: текстуры одежды, черт лица, волос. Удаление серебряного зеркального покрытия, пятен от плесени и трещин эмульсии. Результат: четкий портрет высокого разрешения в оригинальном черно-белом цвете, музейного архивного качества.",
+  },
+  {
+    id: "yarkie-80-e-tsveta-snova-zhivye",
+    title: "Яркие 80-е - цвета снова живые",
+    beforeImage: "/images/examples/yarkie-80-e-tsveta-snova-zhivye/before.png",
+    afterImage: "/images/examples/yarkie-80-e-tsveta-snova-zhivye/after.png",
+    prompt: "Восстановите выцветшую цветную фотографию подростков 1980-х годов. Восстановите оригинальные яркие цвета: насыщенные красный, желтый, бирюзовый цвета одежды того периода, исправьте сдвиг в сторону пурпурного, характерный для старения пленки 80-х, восстановите детали в тенях, удалите царапины на поверхности. Результат: яркий, теплый фотореалистичный результат, максимально приближенный к оригинальному виду пленки.",
+  },
+  {
+    id: "zhivopisnyy-portret-kak-podarok-na-yubiley",
+    title: "Живописный портрет как подарок на юбилей",
+    beforeImage: "/images/examples/zhivopisnyy-portret-kak-podarok-na-yubiley/before.png",
+    afterImage: "/images/examples/zhivopisnyy-portret-kak-podarok-na-yubiley/after.png",
+    prompt: "Превратите семейную фотографию (3 человека) в летнем парке в акварельную картину. Мягкие пастельные тона, свободные мазки кисти, импрессионистский фон зеленых деревьев, теплый свет. Сохраните узнаваемость лиц. Подходит для печати и оформления в рамку в качестве подарка.",
+  },
+  {
+    id: "anime-versiya-tebya-dlya-avatara-i-mercha",
+    title: "Аниме-версия тебя - для аватара и мерча",
+    beforeImage: "/images/examples/anime-versiya-tebya-dlya-avatara-i-mercha/before.png",
+    afterImage: "/images/examples/anime-versiya-tebya-dlya-avatara-i-mercha/after.png",
+    prompt: "Превратите женский портрет в высококачественную иллюстрацию в стиле аниме (вдохновленную Studio Ghibli). Большие выразительные глаза, гладкая кожа, стилизованные волосы с сохранением естественного цвета, мягкий фон с легким эффектом боке. Дружелюбная и современная эстетика. Подходит для аватаров или печатной продукции.",
+  },
+  {
+    id: "kak-by-ty-vyglyadel-v-viktorianskuyu-epohu",
+    title: "Как бы ты выглядел в викторианскую эпоху",
+    beforeImage: "/images/examples/kak-by-ty-vyglyadel-v-viktorianskuyu-epohu/before.jpg",
+    afterImage: "/images/examples/kak-by-ty-vyglyadel-v-viktorianskuyu-epohu/after.png",
+    prompt: "Переосмыслите современный мужской портрет как фотографию викторианской эпохи: сепия, одежда, соответствующая эпохе (фройк, галстук), формальная, строгая поза, текстура состаренной фотографии с виньеткой. Сохраните сходство лиц. Аутентичная эстетика дагеротипа.",
+  },
+  {
+    id: "dlya-doski-pocheta",
+    title: "Для доски почёта",
+    beforeImage: "/images/examples/dlya-doski-pocheta/before.jpg",
+    afterImage: "/images/examples/dlya-doski-pocheta/after.jpg",
+    prompt: "Профессиональный деловой портрет мужчины около 55-60 лет с короткими седовато-каштановыми волосами, на основе черт лица с референсного фото. Он одет в строгий темно-синий деловой костюм, белую рубашку и бордовый галстук. Прямой взгляд в камеру, нейтральное уверенное выражение лица с легкой профессиональной улыбкой. Однотонный нейтральный серый студийный фон, ровный мягкий свет без резких теней. Композиция по центру, кадр по плечи, четкий фокус на лице, фотореалистичное изображение высокого разрешения, в стиле фото для доски почета.",
+  },
+  {
+    id: "graficheskiy-portret-dlya-korporativnogo-brenda",
+    title: "Графический портрет для корпоративного бренда",
+    beforeImage: "/images/examples/graficheskiy-portret-dlya-korporativnogo-brenda/before.jpg",
+    afterImage: "/images/examples/graficheskiy-portret-dlya-korporativnogo-brenda/after.jpg",
+    prompt: "Превратите деловой портрет мужчины средних лет в эффектную графическую иллюстрацию: высококонтрастный двухцветный вариант (темно-синий + белый), чистый векторный стиль, четкие геометрические линии, минимум деталей. Подходит для логотипа компании или фирменного стиля. Без фона.",
+  },
+  {
+    id: "skazochnyy-personazh-iz-tvoey-fotografii",
+    title: "Сказочный персонаж из твоей фотографии",
+    beforeImage: "/images/examples/skazochnyy-personazh-iz-tvoey-fotografii/before.png",
+    afterImage: "/images/examples/skazochnyy-personazh-iz-tvoey-fotografii/after.png",
+    prompt: "Превратите портрет улыбающейся девушки в иллюстрацию сказочного персонажа: добавьте струящееся волшебное платье, блестки, фон зачарованного леса, мягкое золотое освещение. Сохраняйте сходство лиц. Стиль в стиле Диснея, яркие цвета, подходят для обложки детской книги или поздравительной открытки.",
+  },
+  {
+    id: "kiberpank-versiya-tvoego-portreta",
+    title: "Киберпанк-версия твоего портрета",
+    beforeImage: "/images/examples/kiberpank-versiya-tvoego-portreta/before.jpg",
+    afterImage: "/images/examples/kiberpank-versiya-tvoego-portreta/after.png",
+    prompt: "Превратите городской мужской портрет в иллюстрацию в стиле киберпанк: неоновое освещение (пурпурный + голубой), наложенные футуристические элементы интерфейса, фон города, залитый дождем, со светящимися вывесками, усиленные драматические тени. Сохраните сходство лиц. Гипердетализированный цифровой художественный стиль, кинематографическая композиция.",
+  },
+  {
+    id: "idealnoe-obshchee-foto-vse-smotryat-i-ulybayutsya",
+    title: "Идеальное общее фото - все смотрят и улыбаются",
+    beforeImage: "/images/examples/idealnoe-obshchee-foto-vse-smotryat-i-ulybayutsya/before.png",
+    afterImage: "/images/examples/idealnoe-obshchee-foto-vse-smotryat-i-ulybayutsya/after.png",
+    prompt: "Создание композиции и ретушь группового фото более чем 10 человек: коррекция моргания (открытие глаз по сравнению с исходным изображением), поворот голов лицом к камере, где это возможно, нормализация выражений лица до приятного/нейтрального. Равномерное освещение всех лиц. Фотореалистичный, бесшовный результат.",
+  },
+  {
+    id: "moda-proshlogo-v-yarkikh-kraskakh",
+    title: "Мода прошлого — в ярких красках",
+    beforeImage: "/images/examples/moda-proshlogo-v-yarkikh-kraskakh/before.jpg",
+    afterImage: "/images/examples/moda-proshlogo-v-yarkikh-kraskakh/after.png",
+    prompt: "Раскрасьте черно-белый портрет молодой женщины в вечернем платье 1950-х годов. Используйте цвета, соответствующие той эпохе: пастельно-розовое или мятно-зеленое платье, красная помада, теплые тона кожи, темные волосы. Мягкое студийное освещение. Фотореалистичная цветовая палитра, напоминающая пленку Kodachrome.",
+  },
+  {
+    id: "rezkost-i-detalizatsiya-kak-s-professionalnoy-kamery",
+    title: "Резкость и детализация — как с профессиональной камеры",
+    beforeImage: "/images/examples/rezkost-i-detalizatsiya-kak-s-professionalnoy-kamery/before.jpg",
+    afterImage: "/images/examples/rezkost-i-detalizatsiya-kak-s-professionalnoy-kamery/after.jpg",
+    prompt: "Улучшите и масштабируйте размытый, зашумленный портрет молодой женщины у окна, сделанный на смартфон. Примените сверхвысокое разрешение с помощью ИИ: удалите шум, сделайте черты лица более четкими, улучшите текстуру кожи, улучшите эффект боке на заднем плане. Результат: портрет в качестве 4K, естественные цвета, без искусственного сглаживания, фотореалистичный.",
+  },
+  {
+    id: "iz-videozvonka-v-professionalnyy-portret",
+    title: "Из видеозвонка — в профессиональный портрет",
+    beforeImage: "/images/examples/iz-videozvonka-v-professionalnyy-portret/before.png",
+    afterImage: "/images/examples/iz-videozvonka-v-professionalnyy-portret/after.jpeg",
+    prompt: "Гиперреалистичный портрет в разрешении 8K, точно передающий структуру лица и форму костей. Кожа проработана с невероятной детализацией, видны поры, тонкие естественные линии и микротекстуры, без использования ретуши или сглаживания. Глаза кристально чистые, с четкой прорисовкой радужки и отдельными ресницами. Волосы имеют отчетливые, четкие пряди. Освещение профессионального студийного качества с мягким основным светом и теплым оттенком. Снято на диафрагме f/2.8, ISO 100, что обеспечивает малую глубину резкости и мягко размытый фон. Фотореалистичный шедевр кинематографического качества.",
+  },
+];

@@ -73,6 +73,11 @@ function navigate(page: string, data?: GenerationResult): void {
     return;
   }
 
+  if (page === "gallery") {
+    void initGallery(navigate, Boolean(currentUser));
+    return;
+  }
+
   if (!currentUser) return;
 
   const user = currentUser;
@@ -81,7 +86,6 @@ function navigate(page: string, data?: GenerationResult): void {
     void refreshUserStats();
   }
   if (page === "results") initResults(lastGenerationResult, navigate);
-  if (page === "gallery") void initGallery();
 }
 
 function openWalletModal(): void {

@@ -12,6 +12,7 @@ RUN yarn install --frozen-lockfile
 # Copy source code
 COPY src ./src
 COPY frontend ./frontend
+COPY static ./static
 COPY tsconfig.json ./
 
 # Build
@@ -29,6 +30,7 @@ RUN yarn install --frozen-lockfile --production
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/frontend-dist ./frontend-dist
+COPY --from=builder /app/static ./static
 
 RUN mkdir -p /app/uploads
 
@@ -37,7 +39,7 @@ EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:8080/', (r) => {if (r.statusCode !== 404) throw new Error(r.statusCode)})"
+  CMD node -e "const port = process.env.WEB_SERVER_PORT || '8080'; require('http').get(`http://localhost:${port}/`, (r) => { if (r.statusCode !== 200) throw new Error(String(r.statusCode)); })"
 
 # Start application
 CMD ["node", "dist/index.js"]

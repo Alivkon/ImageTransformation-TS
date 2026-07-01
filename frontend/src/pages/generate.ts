@@ -2,6 +2,7 @@ import { PhotoUploader } from "../components/uploader.js";
 import { notifications } from "../components/notifications.js";
 import { uploadPhoto, startGeneration, getGenerationStatus, sleep, getToken, getBalance } from "../api.js";
 import enhanceRaw from "../prompts/enhance.md?raw";
+import { getSelectedExamplePrompt } from "./gallery.js";
 
 export interface GenerationResult {
   generationId: number;
@@ -46,6 +47,8 @@ export function initGenerate(
       .catch(() => undefined);
   }
 
+  applySelectedExamplePrompt();
+
   if (generateInitialized) return;
   generateInitialized = true;
 
@@ -81,6 +84,8 @@ export function initGenerate(
     updateGenerateBtn();
   });
 
+  updateGenerateBtn();
+
   document.getElementById("generate-btn")?.addEventListener("click", () => {
     void handleGenerate(navigate);
   });
@@ -91,6 +96,14 @@ function updateGenerateBtn(): void {
   if (!btn) return;
   const prompt = (document.getElementById("prompt-input") as HTMLTextAreaElement | null)?.value.trim() ?? "";
   btn.disabled = !hasPhoto || (prompt.length === 0 && !enhanceActive);
+}
+
+function applySelectedExamplePrompt(): void {
+  const promptInput = document.getElementById("prompt-input") as HTMLTextAreaElement | null;
+  const selectedExamplePrompt = getSelectedExamplePrompt();
+  if (!promptInput || !selectedExamplePrompt) return;
+  promptInput.value = selectedExamplePrompt;
+  updateGenerateBtn();
 }
 
 async function handleGenerate(navigate: Navigate): Promise<void> {

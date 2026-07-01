@@ -93,7 +93,7 @@ docker compose -f docker-compose.local.yml exec bot npm list
 
 ## Доступ к сервисам
 
-- **Веб приложение**: http://localhost:8080
+- **Веб приложение**: http://localhost:8090
 - **PostgreSQL**: localhost:5432
   - Пользователь: `postgres`
   - Пароль: из `.env.local` (POSTGRES_PASSWORD)
@@ -124,7 +124,7 @@ docker compose -f docker-compose.local.yml down -v
 | Параметр | Local | Production |
 |----------|-------|-----------|
 | Сеть | Локальная (imagetransformer_local) | Подключена к n8n_default |
-| Портов открыто | Все (8080, 5432) | Только для bot (8080) |
+| Портов открыто | Все (8090, 5432) | Только для bot (8080) |
 | Proxy | Нет | Traefik |
 | SSL/TLS | Нет | Да (с certresolver) |
 | Volume монтирование | Да (для разработки) | Нет |
@@ -146,7 +146,7 @@ sudo systemctl start docker
 Найдите процесс, занимающий порт:
 
 ```bash
-sudo lsof -i :8080
+sudo lsof -i :8090
 sudo lsof -i :5432
 ```
 
@@ -154,7 +154,7 @@ sudo lsof -i :5432
 
 ```yaml
 ports:
-  - "8081:8080"  # вместо 8080
+  - "8091:8090"  # вместо 8090
   - "5433:5432"  # вместо 5432
 ```
 

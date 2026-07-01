@@ -1,6 +1,11 @@
 import { getGenerations } from "../api.js";
 import type { Generation } from "../types.js";
 import { notifications } from "../components/notifications.js";
+import { exampleCases } from "../data/example-prompts.js";
+
+const EXAMPLE_PROMPT_STORAGE_KEY = "selected_example_prompt";
+
+type Navigate = (page: string) => void;
 
 export function initCompare(): void {
   const overlay = document.getElementById("compare-overlay");
@@ -102,6 +107,8 @@ export function initCompare(): void {
   });
 
   document.addEventListener("click", (event) => {
+    if ((event.target as HTMLElement | null)?.closest(".example-prompt-btn")) return;
+
     const card = (event.target as HTMLElement | null)?.closest<HTMLElement>(".before-after-card");
     if (!card) return;
 
@@ -115,12 +122,14 @@ let allLoaded = false;
 let currentQuery = "";
 let currentDateFilter = "";
 let listenersAttached = false;
+let exampleListenersAttached = false;
 
-export async function initGallery(): Promise<void> {
+export async function initGallery(navigate: Navigate, canLoadGenerations: boolean): Promise<void> {
   currentPage = 0;
   allLoaded = false;
   currentQuery = "";
   currentDateFilter = "";
+  renderExampleCases();
 
   const grid = document.getElementById("gallery-grid");
   if (grid) grid.innerHTML = "";
@@ -130,7 +139,14 @@ export async function initGallery(): Promise<void> {
   if (searchEl) searchEl.value = "";
   if (filterEl) filterEl.value = "";
 
-  await loadPage();
+  if (canLoadGenerations) {
+    await loadPage();
+  } else if (grid) {
+    grid.innerHTML = `
+      <div class="gallery-empty">
+        <p>Авторизуйтесь, чтобы видеть свои генерации</p>
+      </div>`;
+  }
 
   if (!listenersAttached) {
     listenersAttached = true;
@@ -145,6 +161,30 @@ export async function initGallery(): Promise<void> {
       filterItems();
     });
   }
+
+  if (!exampleListenersAttached) {
+    exampleListenersAttached = true;
+    document.getElementById("example-cases-grid")?.addEventListener("click", (event) => {
+      const button = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>(".example-prompt-btn");
+      if (!button) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const prompt = button.dataset["prompt"]?.trim();
+      if (!prompt) return;
+
+      sessionStorage.setItem(EXAMPLE_PROMPT_STORAGE_KEY, prompt);
+      navigate("generate");
+    });
+  }
+}
+
+export function getSelectedExamplePrompt(): string | null {
+  const prompt = sessionStorage.getItem(EXAMPLE_PROMPT_STORAGE_KEY);
+  if (!prompt) return null;
+  sessionStorage.removeItem(EXAMPLE_PROMPT_STORAGE_KEY);
+  return prompt;
 }
 
 async function loadPage(): Promise<void> {
@@ -198,6 +238,36 @@ function buildCard(g: Generation): HTMLElement {
   return card;
 }
 
+function renderExampleCases(): void {
+  const grid = document.getElementById("example-cases-grid");
+  if (!grid) return;
+
+  grid.innerHTML = exampleCases.map((item) => `
+    <div class="before-after-card" data-example-id="${item.id}">
+      <div class="gallery-case-pair">
+        <div class="case-image-wrap">
+          <div class="case-label">До</div>
+          <img class="case-img" src="${item.beforeImage}" alt="До: ${escapeHtml(item.title)}" loading="lazy">
+        </div>
+        <div class="case-image-wrap">
+          <div class="case-label">После</div>
+          <img class="case-img" src="${item.afterImage}" alt="После: ${escapeHtml(item.title)}" loading="lazy">
+        </div>
+      </div>
+      <div class="case-card-footer">
+        <div class="case-caption">${escapeHtml(item.title)}</div>
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm example-prompt-btn"
+          data-prompt="${escapeHtmlAttr(item.prompt)}"
+        >
+          Посмотреть промт
+        </button>
+      </div>
+    </div>
+  `).join("");
+}
+
 function filterItems(): void {
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -233,4 +303,8 @@ function formatDate(iso: string): string {
 
 function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c] ?? c));
+}
+
+function escapeHtmlAttr(s: string): string {
+  return escapeHtml(s).replace(/\n/g, "&#10;");
 }

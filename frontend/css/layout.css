@@ -864,6 +864,21 @@
     font-weight: var(--font-weight-medium);
 }
 
+.case-card-footer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+}
+
+.case-card-footer .case-caption {
+    padding: 0;
+}
+
+.example-prompt-btn {
+    align-self: flex-start;
+}
+
 /* Status Message */
 .status-message {
     padding: var(--space-lg);
