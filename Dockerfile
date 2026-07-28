@@ -18,6 +18,9 @@ COPY tsconfig.json ./
 # Build
 RUN yarn build:all
 
+# В образ идут только .webp — исходные PNG/JPG примеров остаются в репозитории
+RUN find frontend-dist/images/examples -type f ! -name '*.webp' -delete
+
 # Runtime stage
 FROM node:22-alpine
 

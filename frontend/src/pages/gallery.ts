@@ -112,8 +112,10 @@ export function initCompare(): void {
     const card = (event.target as HTMLElement | null)?.closest<HTMLElement>(".before-after-card");
     if (!card) return;
 
-    const images = card.querySelectorAll<HTMLImageElement>(".case-img");
-    if (images.length >= 2) void open(images[0].src, images[1].src);
+    // в карточке лежат превью, поэтому полноразмерные пути берём из data-атрибутов
+    const before = card.dataset["fullBefore"];
+    const after = card.dataset["fullAfter"];
+    if (before && after) void open(before, after);
   });
 }
 
@@ -243,15 +245,20 @@ function renderExampleCases(): void {
   if (!grid) return;
 
   grid.innerHTML = exampleCases.map((item) => `
-    <div class="before-after-card" data-example-id="${item.id}">
+    <div
+      class="before-after-card"
+      data-example-id="${item.id}"
+      data-full-before="${item.beforeImage}"
+      data-full-after="${item.afterImage}"
+    >
       <div class="gallery-case-pair">
         <div class="case-image-wrap">
           <div class="case-label">До</div>
-          <img class="case-img" src="${item.beforeImage}" alt="До: ${escapeHtml(item.title)}" loading="lazy">
+          <img class="case-img" src="${item.beforeThumb}" alt="До: ${escapeHtml(item.title)}" loading="lazy">
         </div>
         <div class="case-image-wrap">
           <div class="case-label">После</div>
-          <img class="case-img" src="${item.afterImage}" alt="После: ${escapeHtml(item.title)}" loading="lazy">
+          <img class="case-img" src="${item.afterThumb}" alt="После: ${escapeHtml(item.title)}" loading="lazy">
         </div>
       </div>
       <div class="case-card-footer">

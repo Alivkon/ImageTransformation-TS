@@ -6,6 +6,10 @@ dist/
 docker-compose.local.yml
 .env.local*
 
+# Рантайм-файлы локального run.sh
+run.log
+.run.pid
+
 # Vite build output, пересобирается через yarn build:frontend
 frontend-dist/
 

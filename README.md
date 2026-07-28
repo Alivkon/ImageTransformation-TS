@@ -5,8 +5,8 @@
 ```bash
 cd /opt/bots/ImageTransformationTGBot-TS
 
-# 1. Создать .env с необходимыми переменными
-cp .env.example .env   # если есть шаблон, иначе создать вручную
+# 1. Создать .env.local с необходимыми переменными
+cp .env.local.example .env.local
 
 # 2. Установить зависимости
 yarn install
@@ -18,7 +18,7 @@ yarn build
 yarn start
 ```
 
-> **Важно:** для пробного запуска нужна PostgreSQL, прописанная в `.env`.
+> **Важно:** для пробного запуска нужна PostgreSQL, прописанная в `.env.local`.
 
 Альтернатива — режим разработки без компиляции:
 ```bash

@@ -5,7 +5,7 @@ import {
   creditYookassaPayment,
 } from "../database.js";
 import {
-  TOPUP_OPTIONS,
+  MIN_TOPUP,
   YOOKASSA_SHOP_ID,
   YOOKASSA_SECRET_KEY,
 } from "../config.js";
@@ -64,10 +64,10 @@ export function registerWebPaymentRoutes(fastify: FastifyInstance): void {
     if (!user) return;
 
     const body = req.body as { amount?: unknown };
-    const amount = parseInt(String(body.amount ?? ""), 10);
+    const amount = Number(body.amount);
 
-    if (!(TOPUP_OPTIONS as readonly number[]).includes(amount)) {
-      return reply.code(400).send({ error: `Invalid amount. Allowed: ${TOPUP_OPTIONS.join(", ")}` });
+    if (!Number.isSafeInteger(amount) || amount < MIN_TOPUP) {
+      return reply.code(400).send({ error: `Минимальная сумма пополнения — ${MIN_TOPUP}₽` });
     }
 
     try {

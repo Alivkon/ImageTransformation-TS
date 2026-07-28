@@ -18,6 +18,7 @@ declare global {
 
 let selectedAmount: number | null = null;
 let activeWidget: { destroy: () => void; on?: (event: "success" | "fail", cb: () => void) => void } | null = null;
+let walletListeners: AbortController | null = null;
 
 export async function updateWalletBalance(user: User): Promise<void> {
   try {
@@ -32,17 +33,13 @@ export async function updateWalletBalance(user: User): Promise<void> {
 export async function initWallet(user: User): Promise<void> {
   selectedAmount = null;
   if (activeWidget) { activeWidget.destroy(); activeWidget = null; }
+  walletListeners?.abort();
+  walletListeners = new AbortController();
+  const { signal } = walletListeners;
 
   const walletBalance = document.getElementById("wallet-balance");
   if (walletBalance) walletBalance.textContent = `${user.balance.toFixed(0)}₽`;
 
-  // Remove all previous topup button listeners
-  document.querySelectorAll<HTMLButtonElement>(".topup-btn").forEach((btn) => {
-    const newBtn = btn.cloneNode(true) as HTMLButtonElement;
-    btn.parentNode?.replaceChild(newBtn, btn);
-  });
-
-  // Register new listeners
   document.querySelectorAll<HTMLButtonElement>(".topup-btn").forEach((btn) => {
     btn.classList.remove("active");
     btn.addEventListener("click", () => {
@@ -55,7 +52,7 @@ export async function initWallet(user: User): Promise<void> {
       if (customInput) {
         customInput.value = String(selectedAmount);
       }
-    });
+    }, { signal });
   });
 
   const customAmountInput = document.getElementById("custom-amount") as HTMLInputElement | null;
@@ -63,11 +60,11 @@ export async function initWallet(user: User): Promise<void> {
     const val = parseInt(customAmountInput.value, 10);
     selectedAmount = isNaN(val) ? null : val;
     document.querySelectorAll(".topup-btn").forEach((b) => b.classList.remove("active"));
-  });
+  }, { signal });
 
   document.getElementById("pay-btn")?.addEventListener("click", () => {
     void handlePay();
-  });
+  }, { signal });
 
   try {
     const { balance } = await getBalance();
