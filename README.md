@@ -27,6 +27,34 @@ yarn dev
 
 ---
 
+## Запуск веб-интерфейса для разработки
+
+Установите зависимости и запустите фронтенд:
+
+```bash
+cd /home/alivkon/projects/RitualHUB/ImageTransformationTGBot-TS
+yarn install
+yarn dev:frontend
+```
+
+Откройте адрес, который выведет Vite в терминале — обычно это
+`http://localhost:5173`.
+
+Фронтенд перенаправляет запросы `/api` и `/uploads` на бэкенд по адресу
+`http://localhost:8080`. Для работы API поднимите локальную PostgreSQL и
+запустите бэкенд во втором терминале:
+
+```bash
+docker compose -f docker-compose.local.yml up -d postgres
+yarn dev
+```
+
+Перед запуском создайте и заполните `.env.local` на основе
+`.env.local.example`: укажите параметры подключения к БД и необходимые
+переменные бота, включая `BOT_TOKEN`.
+
+---
+
 ## Продакшн-деплой (Docker Compose на сервере)
 
 ```bash
