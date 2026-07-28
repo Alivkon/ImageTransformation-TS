@@ -5,3 +5,13 @@ dist/
 *.txt
 docker-compose.local.yml
 .env.local*
+
+# Vite build output, пересобирается через yarn build:frontend
+frontend-dist/
+
+# Исходные материалы, в рантайме не используются
+temp/
+
+# Пользовательские загрузки и результаты генераций (bind-mount в контейнер)
+uploads/*
+!uploads/.gitkeep
