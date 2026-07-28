@@ -40,14 +40,6 @@ export async function initDb(): Promise<void> {
       WHERE yookassa_payment_id IS NOT NULL
     `);
     await client.query(`
-      ALTER TABLE payments ADD COLUMN IF NOT EXISTS robokassa_inv_id BIGINT
-    `);
-    await client.query(`
-      CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_robokassa_inv_id
-      ON payments (robokassa_inv_id)
-      WHERE robokassa_inv_id IS NOT NULL
-    `);
-    await client.query(`
       CREATE TABLE IF NOT EXISTS generations (
         id BIGSERIAL PRIMARY KEY,
         user_id BIGINT NOT NULL REFERENCES users(user_id),
