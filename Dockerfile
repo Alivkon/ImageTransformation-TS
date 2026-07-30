@@ -43,8 +43,10 @@ RUN mkdir -p /app/uploads
 EXPOSE 8080
 
 # Health check
+# Без бэктиков и ${...}: строку сначала подставляет Docker, потом разбирает /bin/sh —
+# шаблонный литерал превращался в подстановку команды и падал с SyntaxError.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "const port = process.env.WEB_SERVER_PORT || '8080'; require('http').get(`http://localhost:${port}/`, (r) => { if (r.statusCode !== 200) throw new Error(String(r.statusCode)); })"
+  CMD node -e "const port = process.env.WEB_SERVER_PORT || '8080'; require('http').get('http://127.0.0.1:' + port + '/', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1))"
 
 # Start application
 CMD ["node", "dist/index.js"]

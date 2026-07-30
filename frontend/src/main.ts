@@ -89,7 +89,10 @@ function navigate(page: string, data?: GenerationResult): void {
 }
 
 function openWalletModal(): void {
-  if (!currentUser) return;
+  // Аноним видит приложение целиком (см. catch в main), поэтому до кошелька он тоже
+  // доходит. Молча выходить нельзя — кнопка выглядит нажатой, но ничего не делает:
+  // просим авторизоваться и возвращаемся сюда же, как это делает страница генерации.
+  if (!currentUser) { showAuthOverlay(() => openWalletModal()); return; }
   const backdrop = document.getElementById("wallet-modal-backdrop");
   const modal = document.getElementById("wallet-modal");
   if (backdrop) backdrop.classList.add("show");
@@ -219,6 +222,9 @@ async function handleAuthSubmit(
 
 function setupProfileMenu(): void {
   document.getElementById("profile-menu")?.addEventListener("click", () => {
+    // Кнопка доступна и анониму (см. catch в main), а выходить ему неоткуда —
+    // такому пользователю показываем вход вместо подтверждения выхода.
+    if (!currentUser) { showAuthOverlay(); return; }
     const confirmed = window.confirm("Выйти из аккаунта?");
     if (!confirmed) return;
     void logout().then(() => {
