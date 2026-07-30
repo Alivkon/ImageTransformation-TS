@@ -165,7 +165,12 @@ export async function startWebServer(bot: Bot): Promise<void> {
       prefix: "/",
       decorateReply: false,
     });
-    fastify.setNotFoundHandler((_req, reply) => {
+    fastify.setNotFoundHandler((req, reply) => {
+      const pathname = req.url.split("?")[0] ?? req.url;
+      const looksLikeStaticAsset = path.extname(pathname) !== "";
+      if (looksLikeStaticAsset) {
+        return reply.code(404).type("text/plain").send("Not Found");
+      }
       return reply.sendFile("index.html", FRONTEND_DIST_DIR);
     });
   }
@@ -184,6 +189,10 @@ export async function startWebServer(bot: Bot): Promise<void> {
   fastify.get("/pay_yookassa", (_req, reply) => {
     reply.header("ngrok-skip-browser-warning", "true");
     return reply.sendFile("pay_yookassa.html");
+  });
+
+  fastify.get("/pay_robokassa", (_req, reply) => {
+    return reply.code(404).send();
   });
 
   fastify.get("/admin", (_req, reply) => {
