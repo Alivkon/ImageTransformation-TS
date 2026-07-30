@@ -6,7 +6,8 @@ dist/
 docker-compose.local.yml
 .env.local*
 
-# Рантайм-файлы локального run.sh
+# Локальный запуск: сам скрипт и его рантайм-файлы
+run.sh
 run.log
 .run.pid
 

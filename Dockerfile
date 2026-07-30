@@ -1,5 +1,5 @@
 # Build stage
-FROM node:22-alpine AS builder
+FROM node:22.11.0-alpine3.20 AS builder
 
 WORKDIR /app
 
@@ -7,7 +7,8 @@ WORKDIR /app
 COPY package.json yarn.lock ./
 
 # Install dependencies
-RUN yarn install --frozen-lockfile
+RUN apk update && apk upgrade && \
+    yarn install --frozen-lockfile
 
 # Copy source code
 COPY src ./src
@@ -22,13 +23,14 @@ RUN yarn build:all
 RUN find frontend-dist/images/examples -type f ! -name '*.webp' -delete
 
 # Runtime stage
-FROM node:22-alpine
+FROM node:22.11.0-alpine3.20
 
 WORKDIR /app
 
 # Install only production dependencies
 COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile --production
+RUN apk update && apk upgrade && \
+    yarn install --frozen-lockfile --production
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
