@@ -79,5 +79,5 @@ yarn build && sudo docker compose build bot && docker compose up -d bot
 
 После запуска:
 - Бот работает в контейнере `imagetransformationtgbot_ts`
-- PostgreSQL — в контейнере `postgre_imagetransformer`
+- PostgreSQL — в контейнере `postgre_imagetransformer_ts` (сервис `postgres` из этого compose)
 - Traefik автоматически выдаёт TLS и роутит трафик на `imagetransformation.ru`

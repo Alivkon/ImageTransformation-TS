@@ -4,17 +4,20 @@ services:
     container_name: postgre_imagetransformer_ts
     restart: unless-stopped
     env_file: .env
+    # Те же значения, что в docker-compose.local.yml, — чтобы локальная и серверная
+    # базы отличались только паролем. Применяются только при первой инициализации тома.
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_DB: postgres
+      POSTGRES_DB: imagetransformer
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # Закомментируй для доступа только внутри сети
-    ports:
-      - "5434:5432"
+    # Порт наружу не публикуется: бот ходит к базе по внутренней сети. Раскомментируй,
+    # если нужен доступ с хоста (psql, дампы).
+    # ports:
+    #   - "5434:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d imagetransformer"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,8 +31,9 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      # Переопределяем DATABASE_URL внутри контейнера — используем имя сервиса, не localhost
-      DATABASE_URL: postgresql://imagetransformer:${POSTGRES_PASSWORD}@postgre_imagetransformer/imagetransformer
+      # Переопределяем DATABASE_URL из .env: внутри сети база доступна по имени сервиса
+      # postgres — это контейнер из этого же compose, а не внешний.
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/imagetransformer
     volumes:
       - ./uploads:/app/uploads
     expose:
