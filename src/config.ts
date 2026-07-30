@@ -1,6 +1,10 @@
 import dotenv from "dotenv";
 
+// Локально переменные лежат в .env.local, на сервере — в .env (docker-compose передаёт его
+// через env_file). dotenv не перезатирает уже заданные переменные, поэтому .env.local имеет
+// приоритет, а .env работает как фолбэк — одна и та же сборка годится и там, и там.
 dotenv.config({ path: ".env.local" });
+dotenv.config({ path: ".env" });
 
 function required(name: string): string {
   const value = process.env[name];

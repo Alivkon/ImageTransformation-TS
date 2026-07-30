@@ -5,6 +5,7 @@ import { adminNotifyMiddleware } from "./middlewares/adminNotify.js";
 import { paymentRouter } from "./handlers/payment.js";
 import { startRouter } from "./handlers/start.js";
 import { generateRouter } from "./handlers/generate.js";
+import { startPaymentReconciler } from "./services/paymentReconciler.js";
 import { startWebServer } from "./webServer.js";
 
 async function main(): Promise<void> {
@@ -30,6 +31,10 @@ async function main(): Promise<void> {
   bot.catch((err) => {
     console.error("Bot error:", err);
   });
+
+  // Добирает оплаченные, но не зачисленные платежи, если вебхук и подтверждение
+  // из браузера не сработали.
+  startPaymentReconciler(bot);
 
   console.log("Starting bot...");
 

@@ -55,6 +55,15 @@ export async function initDb(): Promise<void> {
     `);
 
     // Web authentication
+    // Платёж заводится со статусом pending при создании и переводится в succeeded при
+    // зачислении. Существующие записи создавались только в момент зачисления, поэтому
+    // дефолт succeeded корректен для них.
+    await client.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'succeeded'`);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_payments_pending
+      ON payments (created_at)
+      WHERE status = 'pending'
+    `);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE`);
@@ -200,6 +209,60 @@ export async function savePayment(params: {
   );
 }
 
+// Платёж фиксируется сразу после создания в YooKassa, ещё до оплаты. Без этого
+// «оплачено, но не зачислено» нигде не остаётся, и досверить платёж потом нечем.
+export async function createPendingYookassaPayment(params: {
+  userId: number;
+  amount: number;
+  yookassaPaymentId: string;
+}): Promise<void> {
+  await pool.query(
+    `INSERT INTO payments (user_id, amount, yookassa_payment_id, status)
+     VALUES ($1, $2, $3, 'pending')
+     ON CONFLICT (yookassa_payment_id) WHERE yookassa_payment_id IS NOT NULL
+     DO NOTHING`,
+    [params.userId, params.amount, params.yookassaPaymentId],
+  );
+}
+
+export async function listPendingYookassaPayments(params: {
+  olderThanSeconds: number;
+  limit: number;
+}): Promise<{ userId: number; amount: number; yookassaPaymentId: string; createdAt: Date }[]> {
+  const result = await pool.query<{
+    user_id: string;
+    amount: number;
+    yookassa_payment_id: string;
+    created_at: Date;
+  }>(
+    `SELECT user_id, amount, yookassa_payment_id, created_at
+     FROM payments
+     WHERE status = 'pending'
+       AND yookassa_payment_id IS NOT NULL
+       AND created_at < NOW() - make_interval(secs => $1)
+     ORDER BY created_at
+     LIMIT $2`,
+    [params.olderThanSeconds, params.limit],
+  );
+  return result.rows.map((r) => ({
+    userId: Number(r.user_id),
+    amount: r.amount,
+    yookassaPaymentId: r.yookassa_payment_id,
+    createdAt: r.created_at,
+  }));
+}
+
+export async function markYookassaPaymentStatus(
+  yookassaPaymentId: string,
+  status: "canceled" | "abandoned",
+): Promise<void> {
+  await pool.query(
+    `UPDATE payments SET status = $2
+     WHERE yookassa_payment_id = $1 AND status = 'pending'`,
+    [yookassaPaymentId, status],
+  );
+}
+
 export async function creditYookassaPayment(params: {
   userId: number;
   amount: number;
@@ -208,11 +271,15 @@ export async function creditYookassaPayment(params: {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    // DO UPDATE вместо DO NOTHING: платёж мог быть заранее записан как pending.
+    // Условие status <> 'succeeded' оставляет операцию идемпотентной — повторный
+    // вызов (вебхук + подтверждение из браузера + сверка) не зачислит дважды.
     const insertResult = await client.query<{ id: number }>(
-      `INSERT INTO payments (user_id, amount, yookassa_payment_id)
-       VALUES ($1, $2, $3)
+      `INSERT INTO payments (user_id, amount, yookassa_payment_id, status)
+       VALUES ($1, $2, $3, 'succeeded')
        ON CONFLICT (yookassa_payment_id) WHERE yookassa_payment_id IS NOT NULL
-       DO NOTHING
+       DO UPDATE SET status = 'succeeded', amount = EXCLUDED.amount
+       WHERE payments.status <> 'succeeded'
        RETURNING id`,
       [params.userId, params.amount, params.yookassaPaymentId],
     );
@@ -336,7 +403,7 @@ export async function getAdminStats(): Promise<Record<string, unknown>> {
       (SELECT COUNT(*) FROM generations)::int AS total_generations,
       (SELECT COUNT(*) FROM generations WHERE status = 'completed')::int AS completed_generations,
       (SELECT COUNT(*) FROM generations WHERE status = 'failed')::int AS failed_generations,
-      (SELECT COALESCE(SUM(amount), 0) FROM payments) AS total_revenue
+      (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'succeeded') AS total_revenue
   `);
   return result.rows[0] as Record<string, unknown>;
 }
@@ -359,7 +426,7 @@ export async function getAdminGenerations(limit = 50, offset = 0): Promise<Recor
 export async function getAdminPayments(limit = 50, offset = 0): Promise<Record<string, unknown>[]> {
   const result = await pool.query(
     `SELECT p.id, p.user_id, u.username, u.first_name,
-            p.amount, p.yookassa_payment_id,
+            p.amount, p.yookassa_payment_id, p.status,
             p.telegram_charge_id, p.created_at
      FROM payments p
      JOIN users u ON u.user_id = p.user_id
@@ -373,7 +440,7 @@ export async function getAdminPayments(limit = 50, offset = 0): Promise<Record<s
 export async function getUserPayments(userId: number, limit = 20): Promise<{ id: number; amount: number; created_at: string }[]> {
   const result = await pool.query<{ id: number; amount: number; created_at: Date }>(
     `SELECT id, amount, created_at FROM payments
-     WHERE user_id = $1
+     WHERE user_id = $1 AND status = 'succeeded'
      ORDER BY created_at DESC
      LIMIT $2`,
     [userId, limit],

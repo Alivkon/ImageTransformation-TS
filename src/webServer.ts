@@ -15,11 +15,16 @@ import {
   BOT_TOKEN,
   TOPUP_OPTIONS,
   WEB_SERVER_PORT,
-  YOOKASSA_SECRET_KEY,
-  YOOKASSA_SHOP_ID,
   YOOKASSA_SKIP_IP_CHECK,
 } from "./config.js";
 import {
+  confirmationToken,
+  createPayment,
+  findPayment,
+  isYookassaConfigured,
+} from "./services/yookassa.js";
+import {
+  createPendingYookassaPayment,
   creditManualBalance,
   creditYookassaPayment,
   getAdminGenerations,
@@ -89,47 +94,6 @@ function rowsToJson(rows: Record<string, unknown>[]): unknown[] {
       ]),
     ),
   );
-}
-
-// YooKassa HTTP client (no SDK)
-function yookassaAuthHeader(): string {
-  return `Basic ${Buffer.from(`${YOOKASSA_SHOP_ID}:${YOOKASSA_SECRET_KEY}`).toString("base64")}`;
-}
-
-async function yookassaCreatePayment(userId: number, amount: number): Promise<{ id?: string; confirmation_token?: string }> {
-  const resp = await fetch("https://api.yookassa.ru/v3/payments", {
-    method: "POST",
-    headers: {
-      Authorization: yookassaAuthHeader(),
-      "Content-Type": "application/json",
-      "Idempotence-Key": crypto.randomUUID(),
-    },
-    body: JSON.stringify({
-      amount: { value: amount.toFixed(2), currency: "RUB" },
-      confirmation: { type: "embedded" },
-      capture: true,
-      description: `Пополнение баланса на ${amount}₽`,
-      metadata: { user_id: String(userId) },
-    }),
-    signal: AbortSignal.timeout(15_000),
-  });
-  return (await resp.json()) as { id?: string; confirmation_token?: string };
-}
-
-async function yookassaFindPayment(paymentId: string): Promise<{
-  status?: string;
-  amount?: { value: string };
-  metadata?: { user_id?: string };
-}> {
-  const resp = await fetch(`https://api.yookassa.ru/v3/payments/${paymentId}`, {
-    headers: { Authorization: yookassaAuthHeader() },
-    signal: AbortSignal.timeout(15_000),
-  });
-  return (await resp.json()) as {
-    status?: string;
-    amount?: { value: string };
-    metadata?: { user_id?: string };
-  };
 }
 
 const UPLOADS_DIR = path.resolve(__dirname, "../uploads");
@@ -284,15 +248,33 @@ export async function startWebServer(bot: Bot): Promise<void> {
     const user = await getUser(userId);
     if (!user) return reply.code(404).send({ error: "User not found" });
 
+    if (!isYookassaConfigured()) {
+      fastify.log.error("YooKassa не настроена: YOOKASSA_SHOP_ID/YOOKASSA_SECRET_KEY содержат значения-заглушки");
+      return reply.code(503).send({
+        error: "Оплата не настроена: в окружении не заданы реальные YOOKASSA_SHOP_ID и YOOKASSA_SECRET_KEY",
+      });
+    }
+
     try {
-      const payment = await yookassaCreatePayment(userId, amount);
-      const token = (payment as Record<string, unknown>)["confirmation"]
-        ? ((payment as Record<string, unknown>)["confirmation"] as Record<string, unknown>)["confirmation_token"]
-        : payment.confirmation_token;
+      const payment = await createPayment(userId, amount);
+      const token = confirmationToken(payment);
+
+      if (!token || typeof payment.id !== "string") {
+        fastify.log.error("YooKassa не вернула confirmation_token: %j", payment);
+        return reply.code(502).send({
+          error: "YooKassa не вернула токен формы оплаты. Проверьте, что для магазина включён встроенный виджет (confirmation type embedded).",
+        });
+      }
+
+      // Фиксируем платёж до оплаты, чтобы сверка добрала его, если ни вебхук,
+      // ни подтверждение из браузера не сработают.
+      await createPendingYookassaPayment({ userId, amount, yookassaPaymentId: payment.id });
+
       return reply.send({ confirmation_token: token, payment_id: payment.id });
     } catch (err) {
-      fastify.log.error("YooKassa create payment error: %s", err);
-      return reply.code(500).send({ error: "Payment creation failed" });
+      const msg = err instanceof Error ? err.message : String(err);
+      fastify.log.error("YooKassa create payment error: %s", msg);
+      return reply.code(502).send({ error: `Не удалось создать платёж: ${msg}` });
     }
   });
 
@@ -305,12 +287,13 @@ export async function startWebServer(bot: Bot): Promise<void> {
       return reply.code(400).send({ error: "user_id and payment_id are required" });
     }
 
-    let payment: Awaited<ReturnType<typeof yookassaFindPayment>>;
+    let payment: Awaited<ReturnType<typeof findPayment>>;
     try {
-      payment = await yookassaFindPayment(paymentId);
+      payment = await findPayment(paymentId);
     } catch (err) {
-      fastify.log.error("YooKassa confirm lookup error: %s", err);
-      return reply.code(502).send({ error: "Payment lookup failed" });
+      const msg = err instanceof Error ? err.message : String(err);
+      fastify.log.error("YooKassa confirm lookup error: %s", msg);
+      return reply.code(502).send({ error: `Не удалось проверить платёж: ${msg}` });
     }
 
     if (payment.status !== "succeeded") {
@@ -360,11 +343,11 @@ export async function startWebServer(bot: Bot): Promise<void> {
     const paymentId = (data["object"] as Record<string, unknown> | undefined)?.["id"];
     if (typeof paymentId !== "string") return reply.code(400).send();
 
-    let payment: Awaited<ReturnType<typeof yookassaFindPayment>>;
+    let payment: Awaited<ReturnType<typeof findPayment>>;
     try {
-      payment = await yookassaFindPayment(paymentId);
+      payment = await findPayment(paymentId);
     } catch (err) {
-      fastify.log.error("YooKassa find_one error: %s", err);
+      fastify.log.error("YooKassa find_one error: %s", err instanceof Error ? err.message : err);
       return reply.code(500).send();
     }
 
