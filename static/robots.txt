@@ -1,0 +1,12 @@
+User-agent: *
+# Приложение — JS за авторизацией, индексировать нечего. Но картинки примеров
+# из /app/images/ показаны на публичных страницах, их закрывать не нужно.
+Disallow: /app/
+Allow: /app/images/
+# Те же страницы, что и на корневых URL: static/ раздаётся с "/", поэтому файлы
+# доступны ещё и по прямому пути. Канонический адрес — корневой.
+Disallow: /site/
+Disallow: /api/
+Disallow: /uploads/
+
+Sitemap: https://imagetransformation.ru/sitemap.xml

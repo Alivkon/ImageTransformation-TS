@@ -126,17 +126,36 @@ export async function startWebServer(bot: Bot): Promise<void> {
   if (fs.existsSync(FRONTEND_DIST_DIR)) {
     await fastify.register(staticPlugin, {
       root: FRONTEND_DIST_DIR,
-      prefix: "/",
+      prefix: "/app/",
       decorateReply: false,
     });
+
+    fastify.get("/app", (_req, reply) => reply.code(308).redirect("/app/"));
+    fastify.get("/app/", (_req, reply) => reply.sendFile("index.html", FRONTEND_DIST_DIR));
+
     fastify.setNotFoundHandler((req, reply) => {
       const pathname = req.url.split("?")[0] ?? req.url;
       const looksLikeStaticAsset = path.extname(pathname) !== "";
-      if (looksLikeStaticAsset) {
+      if (!pathname.startsWith("/app/") || looksLikeStaticAsset) {
         return reply.code(404).type("text/plain").send("Not Found");
       }
       return reply.sendFile("index.html", FRONTEND_DIST_DIR);
     });
+  }
+
+  // Public, crawlable website. It intentionally consists of ready HTML rather
+  // than the authenticated JavaScript application served at /app/.
+  const publicPages: Record<string, string> = {
+    "/": "site/index.html",
+    "/delovoy-portret-iz-foto": "site/delovoy-portret-iz-foto.html",
+    "/uluchshit-gruppovoe-foto": "site/uluchshit-gruppovoe-foto.html",
+    "/restavraciya-staryh-foto": "site/restavraciya-staryh-foto.html",
+    "/raskrasit-cherno-beloe-foto": "site/raskrasit-cherno-beloe-foto.html",
+    "/kak-polzovatsya": "site/kak-polzovatsya.html",
+    "/o-servise": "site/o-servise.html",
+  };
+  for (const [url, file] of Object.entries(publicPages)) {
+    fastify.get(url, (_req, reply) => reply.sendFile(file));
   }
 
   // Static pages

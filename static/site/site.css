@@ -1,0 +1,201 @@
+/* ImageTransformation — публичный сайт.
+   Направление: тёплый, спокойный интерфейс для двух режимов одной и той же
+   пользовательницы — быстрое рабочее поручение и бережная работа с семейным
+   архивом. Фото остаются главным цветовым пятном, но бумага и текст теперь
+   тёплые, а не стерильно-холодные — интерфейс должен внушать доверие, а не
+   выглядеть как безразличная выставочная стена. */
+
+:root {
+  /* Тёплые нейтрали — тон состаренной бумаги и мягкого домашнего света,
+     а не типографской белизны. */
+  --ink:#221d17;
+  --ink-soft:#453b2f;
+  --paper:#fbf7f1;
+  --soft:#f3ede2;
+  --muted:#7c7263;
+  --line:#e4dbc9;
+  --shade:rgba(34,29,23,.055);
+  --on-ink-dim:#c9beac;
+
+  /* Единственный сигнальный цвет: обожжённая охра — тепло семейного архива и
+     уверенность делового решения одновременно. Используется точечно: CTA,
+     метки двух сценариев, акцентные цифры. Не заливка, а сигнал. */
+  --amber:#a8632f;
+  --amber-soft:#f1e3d1;
+
+  --sans:-apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "Liberation Sans", Arial, sans-serif;
+  --serif:"Iowan Old Style", "Palatino Linotype", Georgia, "PT Serif", "Liberation Serif", serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink:#f3ede2;
+    --ink-soft:#d9cfc0;
+    --paper:#1a1611;
+    --soft:#221d17;
+    --muted:#a89c89;
+    --line:#3a3226;
+    --shade:rgba(243,237,226,.07);
+    --on-ink-dim:#6e6250;
+    --amber:#d68a4c;
+    --amber-soft:#2c2114;
+  }
+}
+
+* { box-sizing:border-box; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior:smooth; } }
+
+body {
+  margin:0;
+  color:var(--ink);
+  background:var(--paper);
+  font:16px/1.65 var(--sans);
+  -webkit-font-smoothing:antialiased;
+}
+
+a { color:inherit; text-decoration:none; }
+img { max-width:100%; }
+:focus-visible { outline:2px solid var(--amber); outline-offset:3px; }
+::selection { background:var(--amber); color:#fff; }
+
+.wrap { width:min(1120px, calc(100% - 40px)); margin:auto; }
+
+/* ─ Шапка ───────────────────────────────────────────────────────────────── */
+.top { position:sticky; top:0; z-index:5; background:var(--paper); background:color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+.nav { min-height:72px; display:flex; gap:24px; align-items:center; justify-content:space-between; }
+.brand { font-size:16px; font-weight:600; letter-spacing:.02em; text-transform:uppercase; }
+.brand span { color:var(--muted); font-weight:400; }
+.links { display:flex; align-items:center; gap:26px; font-size:14px; color:var(--muted); }
+.links a:not(.button):hover { color:var(--ink); text-decoration:underline; text-underline-offset:4px; }
+
+/* ─ Кнопки ──────────────────────────────────────────────────────────────── */
+.button {
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:13px 24px;
+  border:1px solid var(--amber); border-radius:3px;
+  background:var(--amber); color:#fff;
+  font-size:15px; font-weight:600; letter-spacing:.01em;
+  transition:background .15s, color .15s, border-color .15s;
+}
+.button:hover { background:transparent; color:var(--amber); }
+.button.alt { background:transparent; color:var(--ink); border-color:var(--line); }
+.button.alt:hover { background:var(--soft); border-color:var(--ink); color:var(--ink); }
+@media (prefers-reduced-motion: reduce) { .button { transition:none; } }
+
+/* ─ Типографика ─────────────────────────────────────────────────────────── */
+h1 { max-width:16ch; margin:18px 0 22px; font-size:clamp(36px,5.2vw,58px); font-weight:600; letter-spacing:-.03em; line-height:1.05; text-wrap:balance; }
+h2 { margin:0 0 18px; font-size:clamp(24px,2.6vw,33px); font-weight:600; letter-spacing:-.02em; line-height:1.15; text-wrap:balance; }
+h3 { margin:0 0 8px; font-size:18px; font-weight:600; letter-spacing:-.01em; }
+
+.eyebrow, .tag, figcaption, .showcase-link, .facts {
+  font-size:11px; font-weight:600; letter-spacing:.14em; text-transform:uppercase;
+}
+.eyebrow { color:var(--amber); }
+.tag { display:block; margin-bottom:16px; color:var(--muted); }
+
+.lead { max-width:46ch; margin:0; color:var(--ink-soft); font:400 21px/1.55 var(--serif); }
+.intro { max-width:62ch; margin:0 0 40px; color:var(--muted); }
+.prose { max-width:66ch; }
+.wrap.prose { max-width:none; }
+.wrap.prose > * { max-width:66ch; }
+.prose li { margin:8px 0; }
+.step p, .notice, .prose p, .prose li { color:var(--muted); }
+
+.actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:34px; }
+
+.facts { display:flex; flex-wrap:wrap; gap:10px 28px; padding:26px 0 0; margin:38px 0 0; border-top:1px solid var(--line); color:var(--muted); list-style:none; }
+.facts li::before { content:"✓"; margin-right:9px; color:var(--amber); }
+
+/* ─ Секции ──────────────────────────────────────────────────────────────── */
+section { padding:88px 0; }
+.soft { background:var(--soft); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+.hero { padding:96px 0 0; }
+.page-hero { padding:44px 0 68px; }
+.crumbs { padding-top:26px; color:var(--muted); font-size:13px; }
+.crumbs a:hover { color:var(--ink); text-decoration:underline; text-underline-offset:3px; }
+
+/* ─ Развилка сценариев (сигнатурный элемент) ─────────────────────────────
+   Две пользовательницы в одном интерфейсе: рабочее поручение и семейный
+   архив. Показываем это буквально, сразу под заголовком — не общий список
+   карточек, а явный выбор режима с разным тоном подписи под каждым. */
+.fork { display:grid; grid-template-columns:1fr 1fr; gap:1px; margin-top:56px; background:var(--line); border:1px solid var(--line); }
+.fork-path { display:block; padding:36px 34px 32px; background:var(--paper); transition:background .15s; }
+.fork-path:hover { background:var(--soft); }
+.fork-path .eyebrow { display:block; margin-bottom:10px; }
+.fork-path h3 { font-size:22px; margin-bottom:10px; letter-spacing:-.01em; }
+.fork-path p { margin:0 0 20px; color:var(--muted); max-width:38ch; }
+.fork-path .mode-lead { font:400 17px/1.5 var(--serif); color:var(--ink-soft); }
+.fork-cta { display:inline-flex; align-items:center; gap:8px; color:var(--amber); font-size:14px; font-weight:600; }
+.fork-cta::after { content:"→"; transition:transform .15s; }
+.fork-path:hover .fork-cta::after { transform:translateX(3px); }
+@media (prefers-reduced-motion: reduce) { .fork-cta::after { transition:none; } }
+@media (max-width:760px) { .fork { grid-template-columns:1fr; } }
+
+/* ─ Карточки сценариев ──────────────────────────────────────────────────── */
+.cards { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); }
+.card { display:block; padding:30px 28px 34px; background:var(--paper); transition:background .15s; }
+.card:hover { background:var(--soft); }
+.card p { margin:0; color:var(--muted); font-size:15px; }
+@media (prefers-reduced-motion: reduce) { .card { transition:none; } }
+
+/* ─ Снимки ──────────────────────────────────────────────────────────────── */
+figure { margin:0; }
+figcaption { padding-top:9px; color:var(--muted); }
+
+.examples { display:grid; grid-template-columns:repeat(3,1fr); gap:28px; }
+.example { background:transparent; }
+.pair { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.pair figure { min-width:0; display:flex; flex-direction:column; }
+.pair img { display:block; width:100%; aspect-ratio:1/1; object-fit:cover; border:1px solid var(--line); border-radius:2px; }
+.pair figcaption { font-size:10px; }
+.example h3 { padding-top:18px; font-size:17px; }
+.example p { margin:0; color:var(--muted); font-size:14px; }
+
+.showcase { display:flex; flex-wrap:wrap; align-items:flex-start; gap:16px; }
+.showcase figure { max-width:calc(50% - 8px); }
+.showcase img { display:block; width:auto; max-width:100%; height:auto; max-height:360px; border:1px solid var(--line); border-radius:2px; }
+.showcase-list { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap:40px 32px; }
+.showcase-item h3 { margin:0 0 14px; }
+.showcase-link { display:inline-block; margin-top:16px; color:var(--amber); border-bottom:1px solid var(--amber-soft); padding-bottom:3px; }
+.showcase-link:hover { border-bottom-color:var(--amber); }
+
+/* ─ Шаги, врезки ────────────────────────────────────────────────────────── */
+.steps { counter-reset:steps; display:grid; grid-template-columns:repeat(3,1fr); gap:32px; }
+.step::before { counter-increment:steps; content:counter(steps); display:block; padding-bottom:14px; margin-bottom:16px; border-bottom:1px solid var(--line); font-size:13px; font-weight:600; letter-spacing:.16em; color:var(--amber); font-variant-numeric:tabular-nums; }
+.notice { margin-top:28px; padding:20px 24px; border-left:2px solid var(--amber); background:var(--amber-soft); border-radius:0 2px 2px 0; }
+.two { display:grid; grid-template-columns:1fr 1fr; gap:32px; }
+.box { padding:28px; border:1px solid var(--line); border-radius:2px; font:400 18px/1.55 var(--serif); background:var(--paper); }
+
+/* ─ FAQ (для AEO и для секретарши, которая ищет один точный ответ) ───────── */
+.faq { display:grid; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:2px; overflow:hidden; }
+.faq-item { background:var(--paper); padding:24px 28px; }
+.faq-item summary { cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center; gap:16px; font-weight:600; font-size:16px; }
+.faq-item summary::-webkit-details-marker { display:none; }
+.faq-item summary::after { content:"+"; color:var(--amber); font-size:20px; font-weight:400; flex:none; }
+.faq-item[open] summary::after { content:"−"; }
+.faq-item p { margin:12px 0 0; color:var(--muted); max-width:66ch; }
+
+/* ─ Финальный призыв ────────────────────────────────────────────────────── */
+.cta { padding:64px 56px; background:var(--ink); color:var(--paper); border-radius:3px; }
+.cta h2 { max-width:24ch; }
+.cta p { max-width:56ch; margin:0 0 30px; color:var(--on-ink-dim); }
+.cta .button { border-color:var(--amber); background:var(--amber); color:#fff; }
+.cta .button:hover { background:transparent; color:var(--amber); }
+
+/* ─ Подвал ──────────────────────────────────────────────────────────────── */
+.footer { padding:42px 0; border-top:1px solid var(--line); color:var(--muted); font-size:14px; }
+.footer-row { display:flex; gap:20px; align-items:center; justify-content:space-between; }
+.footer-links { display:flex; gap:22px; flex-wrap:wrap; }
+.footer-links a:hover { color:var(--ink); text-decoration:underline; text-underline-offset:4px; }
+
+@media (max-width:760px) {
+  .links a:not(.button) { display:none; }
+  .nav { min-height:62px; gap:8px; }
+  .hero { padding:64px 0 0; }
+  section { padding:60px 0; }
+  .cards, .examples, .steps, .two { grid-template-columns:1fr; }
+  .showcase figure { flex:1 1 0; min-width:0; }
+  .showcase img { width:100%; max-height:none; }
+  .cta { padding:38px 26px; }
+  .footer-row { align-items:flex-start; flex-direction:column; }
+}

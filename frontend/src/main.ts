@@ -4,7 +4,8 @@ import { initDashboard } from "./pages/dashboard.js";
 import { initGenerate } from "./pages/generate.js";
 import type { GenerationResult } from "./pages/generate.js";
 import { initResults } from "./pages/results.js";
-import { initCompare, initGallery } from "./pages/gallery.js";
+import { initCompare, initGallery, setSelectedExamplePrompt } from "./pages/gallery.js";
+import { exampleCases } from "./data/example-prompts.js";
 import { initWallet, updateWalletBalance } from "./pages/wallet.js";
 import { getMe, login, register, logout, setToken, resendVerification, sleep, getBalance, confirmYookassaPayment } from "./api.js";
 import type { User } from "./types.js";
@@ -267,19 +268,35 @@ async function main(): Promise<void> {
   initTheme();
   setupAuthForm();
 
-  // После перехода по ссылке верификации сервер редиректит на /?session=TOKEN
+  // Чистим служебные query-параметры, не выходя за пределы приложения: корень сайта
+  // отдаёт публичные страницы, а не этот SPA.
+  const appRoot = import.meta.env.BASE_URL;
+
+  // После перехода по ссылке верификации сервер редиректит на /app/?session=TOKEN
   const params = new URLSearchParams(window.location.search);
   const sessionToken = params.get("session");
   if (sessionToken) {
     setToken(sessionToken);
-    window.history.replaceState({}, "", "/");
+    window.history.replaceState({}, "", appRoot);
   }
 
   // После успешного платежа обновляем баланс
   const paymentSuccess = params.has("payment_success");
   const paymentId = params.get("payment_id");
   if (paymentSuccess) {
-    window.history.replaceState({}, "", "/");
+    window.history.replaceState({}, "", appRoot);
+  }
+
+  // Страницы публичного сайта ведут в приложение ссылкой /app/?example=<id>. Ведём себя
+  // так же, как кнопка «Взять промпт» в галерее: открываем генерацию с готовым описанием.
+  const exampleId = params.get("example");
+  const examplePrompt = exampleId
+    ? exampleCases.find((item) => item.id === exampleId)?.prompt
+    : undefined;
+  if (exampleId) {
+    // Чистим параметр даже для неизвестного id, иначе он останется висеть в адресе.
+    if (examplePrompt) setSelectedExamplePrompt(examplePrompt);
+    window.history.replaceState({}, "", appRoot);
   }
 
   try {
@@ -323,7 +340,7 @@ async function main(): Promise<void> {
         notifications.info("Платёж обрабатывается. Баланс обновится в ближайшее время.");
       })();
     } else {
-      navigate("dashboard");
+      navigate(examplePrompt ? "generate" : "dashboard");
     }
   } catch {
     hideAuthOverlay();

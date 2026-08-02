@@ -2,6 +2,7 @@ import { getGenerations } from "../api.js";
 import type { Generation } from "../types.js";
 import { notifications } from "../components/notifications.js";
 import { exampleCases } from "../data/example-prompts.js";
+import { asset } from "../assets.js";
 
 const EXAMPLE_PROMPT_STORAGE_KEY = "selected_example_prompt";
 
@@ -182,6 +183,12 @@ export async function initGallery(navigate: Navigate, canLoadGenerations: boolea
   }
 }
 
+// Тот же канал, что и у кнопки «Взять промпт» в галерее, — им пользуются публичные
+// страницы сайта, приводя пользователя сразу на генерацию с заполненным описанием.
+export function setSelectedExamplePrompt(prompt: string): void {
+  sessionStorage.setItem(EXAMPLE_PROMPT_STORAGE_KEY, prompt);
+}
+
 export function getSelectedExamplePrompt(): string | null {
   const prompt = sessionStorage.getItem(EXAMPLE_PROMPT_STORAGE_KEY);
   if (!prompt) return null;
@@ -248,17 +255,17 @@ function renderExampleCases(): void {
     <div
       class="before-after-card"
       data-example-id="${item.id}"
-      data-full-before="${item.beforeImage}"
-      data-full-after="${item.afterImage}"
+      data-full-before="${asset(item.beforeImage)}"
+      data-full-after="${asset(item.afterImage)}"
     >
       <div class="gallery-case-pair">
         <div class="case-image-wrap">
           <div class="case-label">До</div>
-          <img class="case-img" src="${item.beforeThumb}" alt="До: ${escapeHtml(item.title)}" loading="lazy">
+          <img class="case-img" src="${asset(item.beforeThumb)}" alt="До: ${escapeHtml(item.title)}" loading="lazy">
         </div>
         <div class="case-image-wrap">
           <div class="case-label">После</div>
-          <img class="case-img" src="${item.afterThumb}" alt="После: ${escapeHtml(item.title)}" loading="lazy">
+          <img class="case-img" src="${asset(item.afterThumb)}" alt="После: ${escapeHtml(item.title)}" loading="lazy">
         </div>
       </div>
       <div class="case-card-footer">

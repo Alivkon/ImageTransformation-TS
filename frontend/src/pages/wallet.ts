@@ -135,7 +135,9 @@ async function handleYookassa(amount: number): Promise<void> {
   }
   container.innerHTML = "";
 
-  const returnUrl = new URL(window.location.origin);
+  // Возвращаться нужно в приложение (/app/), а не на корень — там публичный сайт,
+  // который не умеет обрабатывать payment_success.
+  const returnUrl = new URL(import.meta.env.BASE_URL, window.location.origin);
   returnUrl.searchParams.set("payment_success", "true");
   returnUrl.searchParams.set("payment_id", payment_id);
 

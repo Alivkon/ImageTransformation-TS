@@ -3,6 +3,8 @@ node_modules/
 dist/
 *.js.map
 *.txt
+# Исключение из *.txt: robots.txt раздаётся публично и должен быть в репозитории
+!static/robots.txt
 docker-compose.local.yml
 .env.local*
 

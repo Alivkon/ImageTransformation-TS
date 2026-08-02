@@ -83,7 +83,7 @@ export const exampleCases: ExampleCase[] = [
   },
   {
     id: "dlya-doski-pocheta",
-    title: "Для доски почёта",
+    title: "Для стенда „Наши лидеры“",
     beforeImage: "/images/examples/dlya-doski-pocheta/before.webp",
     beforeThumb: "/images/examples/dlya-doski-pocheta/before-thumb.webp",
     afterImage: "/images/examples/dlya-doski-pocheta/after.webp",

@@ -106,7 +106,8 @@ export function registerAuthRoutes(fastify: FastifyInstance): void {
     await markEmailVerified(userId);
     const session = await createWebSession(userId);
 
-    return reply.redirect(`/?session=${session.token}`);
+    // Корень занят публичным сайтом, приложение живёт под /app/ — токен нужно отдать ему.
+    return reply.redirect(`/app/?session=${session.token}`);
   });
 
   fastify.post("/api/auth/resend-verification", async (req, reply) => {
