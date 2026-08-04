@@ -8,6 +8,7 @@ import { initCompare, initGallery, setSelectedExamplePrompt } from "./pages/gall
 import { exampleCases } from "./data/example-prompts.js";
 import { initWallet, updateWalletBalance } from "./pages/wallet.js";
 import { getMe, login, register, logout, setToken, resendVerification, sleep, getBalance, confirmYookassaPayment } from "./api.js";
+import { trackPageView } from "./metrika.js";
 import type { User } from "./types.js";
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -68,6 +69,7 @@ function navigate(page: string, data?: GenerationResult): void {
 
   currentPage = page;
   window.scrollTo(0, 0);
+  trackPageView(page);
 
   if (page === "generate") {
     initGenerate(navigate, (cb) => showAuthOverlay(cb), refreshUserStats);

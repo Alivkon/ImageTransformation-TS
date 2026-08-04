@@ -11,14 +11,18 @@ cp .env.local.example .env.local
 # 2. Установить зависимости
 yarn install
 
-# 3. Собрать TypeScript → JS
-yarn build
+# 3. Собрать бэкенд и фронтенд: tsc → dist/, vite → frontend-dist/
+yarn build:all
 
 # 4. Запустить
 yarn start
 ```
 
 > **Важно:** для пробного запуска нужна PostgreSQL, прописанная в `.env.local`.
+
+> **Важно:** нужен именно `yarn build:all`, а не `yarn build`. `yarn build` — это только
+> `tsc`; без каталога `frontend-dist/` сервер вообще не регистрирует приложение на `/app/`
+> (см. `src/webServer.ts`), и по этому адресу будет 404.
 
 Альтернатива — режим разработки без компиляции:
 ```bash
@@ -37,8 +41,9 @@ yarn install
 yarn dev:frontend
 ```
 
-Откройте адрес, который выведет Vite в терминале — обычно это
-`http://localhost:5173`.
+Приложение собирается с `base: "/app/"`, поэтому в dev-сервере Vite оно открывается по
+адресу `http://localhost:5173/app/`, а не по корню. Публичный сайт из `static/site/`
+Vite не раздаёт вообще — его отдаёт бэкенд, смотрите его на `http://localhost:8080/`.
 
 Фронтенд перенаправляет запросы `/api` и `/uploads` на бэкенд по адресу
 `http://localhost:8080`. Для работы API поднимите локальную PostgreSQL и
@@ -52,6 +57,20 @@ yarn dev
 Перед запуском создайте и заполните `.env.local` на основе
 `.env.local.example`: укажите параметры подключения к БД и необходимые
 переменные бота, включая `BOT_TOKEN`.
+
+---
+
+## Карта URL
+
+Что по какому адресу отдаёт бэкенд (`src/webServer.ts`):
+
+| URL | Источник | Что это |
+| --- | --- | --- |
+| `/`, `/o-servise`, `/kak-polzovatsya` и другие посадочные | `static/site/` | Публичный статический сайт, готовый HTML для индексации |
+| `/app/` | `frontend-dist/` | Приложение на Vite (SPA), собирается с `base: "/app/"` |
+| `/uploads/` | `uploads/` | Загруженные фото и результаты генераций |
+| `/admin`, `/oferta`, `/privacy`, `/pay_yookassa` | `static/` | Отдельные страницы Telegram WebApp и юридические документы |
+| `/robots.txt`, `/sitemap.xml`, `/favicon.ico` | `static/` | Служебные файлы (раньше лежали в `frontend/public/`) |
 
 ---
 
@@ -74,8 +93,12 @@ docker compose logs -f bot
  # Изменения на сервере
 ```bash
  # Сборка и перезапуск только программного кода без пересборки БД
-yarn build && sudo docker compose build bot && docker compose up -d bot
+sudo docker compose build bot && docker compose up -d bot
 ```
+
+Собирать проект на хосте перед этим не нужно: `Dockerfile` сам выполняет `yarn build:all`
+внутри образа, а хостовые `dist/` и `node_modules/` в образ не попадают — они в
+`.dockerignore`.
 
 После запуска:
 - Бот работает в контейнере `imagetransformationtgbot_ts`

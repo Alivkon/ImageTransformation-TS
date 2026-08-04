@@ -6,7 +6,7 @@ TypeScript-версия бота для трансформации изобра�
 
 ```bash
 yarn install
-yarn build
+yarn build:all   # tsc → dist/ и vite → frontend-dist/; одного yarn build недостаточно
 yarn start
 ```
 После каждого изменения кода, для перезапуска бота используй:
