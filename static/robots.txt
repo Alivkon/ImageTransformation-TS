@@ -9,4 +9,29 @@ Disallow: /site/
 Disallow: /api/
 Disallow: /uploads/
 
+# ИИ-краулеры и ИИ-поиск. Свою секцию бот читает вместо "User-agent: *",
+# поэтому ограничения дублируются целиком. Доступ разрешён намеренно: сайт
+# должен попадать в ответы ChatGPT, Claude, Perplexity и Яндекс Нейро.
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: YandexAdditional
+User-agent: Applebot-Extended
+User-agent: Bytespider
+User-agent: meta-externalagent
+Allow: /
+Disallow: /app/
+Allow: /app/images/
+Disallow: /site/
+Disallow: /api/
+Disallow: /uploads/
+
 Sitemap: https://imagetransformation.ru/sitemap.xml
+# LLM index: https://imagetransformation.ru/llms.txt
+# LLM full text: https://imagetransformation.ru/llms-full.txt
