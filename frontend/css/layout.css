@@ -213,6 +213,17 @@
     margin-top: var(--space-lg);
 }
 
+.gallery-item-link {
+    color: inherit;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.gallery-item-link:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 3px;
+}
+
 .results-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
