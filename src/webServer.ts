@@ -151,6 +151,7 @@ export async function startWebServer(bot: Bot): Promise<void> {
     "/uluchshit-gruppovoe-foto": "site/uluchshit-gruppovoe-foto.html",
     "/restavraciya-staryh-foto": "site/restavraciya-staryh-foto.html",
     "/raskrasit-cherno-beloe-foto": "site/raskrasit-cherno-beloe-foto.html",
+    "/zhivopisnyy-portret-kak-podarok-na-yubiley": "site/zhivopisnyy-portret-kak-podarok-na-yubiley.html",
     "/kak-polzovatsya": "site/kak-polzovatsya.html",
     "/o-servise": "site/o-servise.html",
   };
