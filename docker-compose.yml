@@ -34,6 +34,9 @@ services:
       # Переопределяем DATABASE_URL из .env: внутри сети база доступна по имени сервиса
       # postgres — это контейнер из этого же compose, а не внешний.
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/imagetransformer
+      # Docker NAT нового провайдера не устанавливает соединение с Telegram.
+      # Tinyproxy слушает только gateway общей внутренней Docker-сети.
+      TELEGRAM_PROXY_URL: http://172.18.0.1:8888
     volumes:
       - ./uploads:/app/uploads
     expose:

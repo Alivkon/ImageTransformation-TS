@@ -1,5 +1,6 @@
 import { Bot } from "grammy";
-import { BOT_TOKEN } from "./config.js";
+import { HttpsProxyAgent } from "https-proxy-agent";
+import { BOT_TOKEN, TELEGRAM_PROXY_URL } from "./config.js";
 import { initDb } from "./database.js";
 import { adminNotifyMiddleware } from "./middlewares/adminNotify.js";
 import { paymentRouter } from "./handlers/payment.js";
@@ -12,7 +13,12 @@ async function main(): Promise<void> {
   await initDb();
 
   const bot = new Bot(BOT_TOKEN, {
-    client: { buildUrl: (root, token, method) => `${root}/bot${token}/${method}` },
+    client: {
+      buildUrl: (root, token, method) => `${root}/bot${token}/${method}`,
+      ...(TELEGRAM_PROXY_URL
+        ? { baseFetchConfig: { agent: new HttpsProxyAgent(TELEGRAM_PROXY_URL) } }
+        : {}),
+    },
   });
 
   // Parse mode HTML by default via transformers
