@@ -9,14 +9,14 @@
 
 | Этап | Описание | Статус |
 |---|---|---|
-| 0 | Подготовка: инвентаризация Traefik, DNS, почта | 🔄 инвентаризация ✅; DNS и почта — задачи владельца |
+| 0 | Подготовка: инвентаризация Traefik, DNS, почта | ✅ инвентаризация + домены/DNS (5/6, raskrasitfoto — у владельца); ящик почты — владелец |
 | 1 | Конфигурация доменов в коде (`src/domains.ts`, WEBAPP_URL, trustProxy) | ✅ выполнено |
 | 2 | Перестройка каталогов (`content/`, чистка `static/`) | ✅ выполнено |
 | 3 | Маршрутизация Fastify (host-gate, 404, dev-fallback, robots/sitemap) | ✅ выполнено |
 | 4 | Шаблоны страниц (плейсхолдеры, удаление счётчиков, CTA) | ✅ выполнено |
 | 5 | Почта и контакты (BCC, SMTP_FROM, юридику) | ✅ код готов; ящик/MX — владелец |
 | 6 | Локальная проверка (build + curl-матрица) | ✅ 21/21 PASS |
-| 7 | Вечер D0: деплой + внешние системы + удаление старого домена | ⬜ (требует владельца) |
+| 7 | Вечер D0: деплой + внешние системы + удаление старого домена | 🔄 роутеры/TLS/деплой/smoke ✅; ждёт DNS raskrasitfoto, BotFather, ЮKassa, ящик → затем удаление старого |
 | 8 | Дни D1+: наблюдение и чистка репозитория | ⬜ |
 
 ---
@@ -134,7 +134,30 @@
 
 ---
 
+### [22.08.2026] Этап 7 (часть 1) — DNS, роутеры, деплой, прод-smoke → 🔄 В РАБОТЕ
+
+**DNS:** 5/6 доменов резолвятся в 145.223.96.83 ✓. **`raskrasitfoto-ai.ru` — записи нет** даже на публичных 1.1.1.1/8.8.8.8 → владельцу проверить написание домена/A-запись у регистратора; сертификат для него выпустится автоматически после появления DNS (роутер уже активен).
+
+**Traefik:** создан `/opt/traefik-dynamic/portret-domains.yml` — 6 Host-роутеров + один service `portret-bot → http://imagetransformationtgbot_ts:8080`. File-provider подхватил мгновенно, все роутеры `enabled` (проверено через API). Сертификаты Let's Encrypt выпущены по TLS-challenge (подтверждено успешными HTTPS-запросами).
+
+**Деплой:** ветка `change-domain-name` влита в `main` (--ff-only, HEAD 657a2c5) → серверный `.env`: `WEBAPP_URL=https://portret-iz-foto-ai.ru` (`SMTP_FROM` сознательно старый до создания ящика) → `docker compose build bot` → `up -d bot`: контейнер **running/healthy**, healthcheck 200 (спас dev-fallback).
+
+**Прод-smoke (`scripts/prod-smoke.sh`) — все проверки зелёные:**
+- gruppovoe/restavraciya/semeynoe/delovoy-portret `-*.ru`: 200, canonical = собственный домен, утечек старого домена/плейсхолдеров = 0, robots `Disallow: /`;
+- portret-iz-foto-ai.ru: canonical ✓, robots c `Disallow: /app/` + Sitemap, sitemap = 5 URL, `/app/` 200 + ассеты, старый путь `/uluchshit-gruppovoe-foto` → 404, оферта 200 с новым доменом;
+- старый `imagetransformation.ru`: переходно 200 (отдаёт новый контент) — **удаление роутера/DNS/MX только после ваших переключений и подтверждения** (шаг 5 Решения 12).
+
+**Ждёт владельца для завершения D0:**
+1. DNS для `raskrasitfoto-ai.ru`.
+2. Telegram BotFather: домен WebApp → `portret-iz-foto-ai.ru`, Menu Button.
+3. ЮKassa: webhook → `https://portret-iz-foto-ai.ru/yookassa/webhook`, тестовый платёж до зачисления.
+4. Ящик `hello@portret-iz-foto-ai.ru` + MX/SPF/DKIM/DMARC → сообщить, я обновлю `SMTP_FROM` в `.env`.
+5. После 1–4 и живой проверки оплаты — подтверждение, и я удаляю старый домен из Traefik (DNS/MX у регистратора удаляете вы).
+
+---
+
 ### [22.08.2026] Фиксация в git
+
 
 - `f1664ea` — feat: Telegram через tinyproxy — незакоммиченные изменения владельца (compose env, https-proxy-agent, src/index.ts) оформлены отдельным коммитом.
 - `cbf53de` — вся миграция (Этапы 1–6): исходники, content/, Dockerfile, планы, ревизия, журнал, curl-харнесс.
