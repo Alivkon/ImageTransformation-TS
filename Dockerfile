@@ -14,6 +14,7 @@ RUN apk update && apk upgrade && \
 COPY src ./src
 COPY frontend ./frontend
 COPY static ./static
+COPY content ./content
 COPY tsconfig.json ./
 
 # Build
@@ -36,6 +37,7 @@ RUN apk update && apk upgrade && \
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/frontend-dist ./frontend-dist
 COPY --from=builder /app/static ./static
+COPY --from=builder /app/content ./content
 
 RUN mkdir -p /app/uploads
 

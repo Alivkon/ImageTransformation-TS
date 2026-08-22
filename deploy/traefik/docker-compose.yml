@@ -1,0 +1,32 @@
+services:
+  traefik:
+    image: traefik:v3.3
+    container_name: imagetransformation_traefik
+    restart: unless-stopped
+    command:
+      - "--log.level=INFO"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
+      - "--certificatesresolvers.mytlschallenge.acme.email=akonischev@mail.ru"
+      - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./dynamic:/etc/traefik/dynamic:ro
+      - traefik_data:/letsencrypt
+    networks:
+      - n8n_default
+
+volumes:
+  traefik_data:
+
+networks:
+  n8n_default:
+    name: n8n_default
+    external: true

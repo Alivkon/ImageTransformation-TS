@@ -1,0 +1,32 @@
+http:
+  routers:
+    imagetransformation:
+      rule: "Host(`imagetransformation.ru`)"
+      entryPoints:
+        - websecure
+      service: imagetransformation
+      tls:
+        certResolver: mytlschallenge
+
+    imagetransformation-www:
+      rule: "Host(`www.imagetransformation.ru`)"
+      entryPoints:
+        - websecure
+      service: imagetransformation
+      middlewares:
+        - redirect-to-apex
+      tls:
+        certResolver: mytlschallenge
+
+  middlewares:
+    redirect-to-apex:
+      redirectRegex:
+        regex: "^https://www\\.imagetransformation\\.ru/(.*)"
+        replacement: "https://imagetransformation.ru/${1}"
+        permanent: true
+
+  services:
+    imagetransformation:
+      loadBalancer:
+        servers:
+          - url: "http://imagetransformationtgbot_ts:8080"

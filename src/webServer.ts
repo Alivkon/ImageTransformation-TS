@@ -1,10 +1,12 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
 import path from "node:path";
 import Fastify from "fastify";
 import staticPlugin from "@fastify/static";
 import formbody from "@fastify/formbody";
 import multipart from "@fastify/multipart";
 import type { Bot } from "grammy";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import { registerAuthRoutes } from "./web/auth.js";
 import { registerUploadRoute } from "./web/uploadRoute.js";
 import { registerGenerateRoute } from "./web/generateRoute.js";
@@ -17,6 +19,13 @@ import {
   WEB_SERVER_PORT,
   YOOKASSA_SKIP_IP_CHECK,
 } from "./config.js";
+import {
+  MAIN_HOST,
+  MAIN_ORIGIN,
+  classifyHost,
+  selfOriginOf,
+  type HostClassification,
+} from "./domains.js";
 import {
   confirmationToken,
   createPayment,
@@ -36,6 +45,35 @@ import {
 } from "./database.js";
 
 const STATIC_DIR = path.resolve(__dirname, "../static");
+const CONTENT_DIR = path.resolve(__dirname, "../content");
+
+/** Все пути файлов внутри static/ — единственные URL, отдаваемые тематическим доменам. */
+function collectAssetPaths(root: string): ReadonlySet<string> {
+  const paths = new Set<string>();
+  const walk = (dir: string, prefix: string): void => {
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const rel = `${prefix}/${entry.name}`;
+      if (entry.isDirectory()) walk(path.join(dir, entry.name), rel);
+      else paths.add(rel);
+    }
+  };
+  walk(root, "");
+  return paths;
+}
+const ASSET_PATHS: ReadonlySet<string> = collectAssetPaths(STATIC_DIR);
+
+/**
+ * Кому доверять x-forwarded-* заголовкам (Решение о trustProxy).
+ * По умолчанию — loopback и приватные docker-сети (порт 8080 наружу не публикуется).
+ * Значение "none" отключает доверие полностью.
+ */
+const TRUST_PROXY = process.env.TRUST_PROXY ?? "loopback,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16";
 
 // YooKassa IP whitelist
 const YOOKASSA_CIDR_RANGES = [
@@ -100,10 +138,79 @@ const UPLOADS_DIR = path.resolve(__dirname, "../uploads");
 const FRONTEND_DIST_DIR = path.resolve(__dirname, "../frontend-dist");
 
 export async function startWebServer(bot: Bot): Promise<void> {
-  const fastify = Fastify({ logger: true });
+  const trustProxy =
+    TRUST_PROXY === "none"
+      ? false
+      : TRUST_PROXY.split(",")
+          .map((part) => part.trim())
+          .filter(Boolean);
+  const fastify = Fastify({ logger: true, trustProxy });
 
   await fastify.register(formbody);
   await fastify.register(multipart);
+
+  // ── Рендеринг страниц из content/ с подстановкой плейсхолдеров (Решение 8) ──
+  interface TemplateContext {
+    selfOrigin: string;
+    mainOrigin: string;
+    host: string;
+  }
+  const renderedCache = new Map<string, string>();
+
+  const readContent = (relPath: string): string | null => {
+    try {
+      return fs.readFileSync(path.join(CONTENT_DIR, relPath), "utf8");
+    } catch {
+      return null;
+    }
+  };
+
+  const rendered = (relPath: string, ctx: TemplateContext): string | null => {
+    const cacheKey = `${ctx.selfOrigin}::${relPath}`;
+    const cached = renderedCache.get(cacheKey);
+    if (cached !== undefined) return cached;
+    const raw = readContent(relPath);
+    if (raw === null) return null;
+    const html = raw.replace(/\{\{(\w+)\}\}/g, (placeholder: string, key: string) => {
+      switch (key) {
+        case "SELF_URL":
+        case "SELF_ORIGIN":
+          return ctx.selfOrigin;
+        case "MAIN_ORIGIN":
+        case "APP_ORIGIN":
+          return ctx.mainOrigin;
+        case "HOST":
+          return ctx.host;
+        default:
+          fastify.log.warn("Неизвестный плейсхолдер шаблона: %s", placeholder);
+          return "";
+      }
+    });
+    renderedCache.set(cacheKey, html);
+    return html;
+  };
+
+  const pageContext = (cls: HostClassification): TemplateContext => ({
+    selfOrigin: selfOriginOf(cls),
+    mainOrigin: MAIN_ORIGIN,
+    host: cls.kind === "local" ? MAIN_HOST : cls.host ?? "",
+  });
+
+  // ── Host-gate: что видно с каждого домена (Решения 3, 5, 6) ──────────────
+  // unknown → 404; landing → только /, robots, sitemap и ассеты static/;
+  // main/local → всё. Хук зарегистрирован до всех маршрутов и статики.
+  fastify.addHook("onRequest", async (req: FastifyRequest, reply: FastifyReply) => {
+    const cls = classifyHost(req.headers.host);
+    const pathname = (req.url.split("?")[0] ?? "/") || "/";
+    if (cls.kind === "unknown") {
+      await reply.code(404).type("text/plain").send("Not Found");
+      return;
+    }
+    if (cls.kind !== "landing") return;
+    if (pathname === "/" || pathname === "/robots.txt" || pathname === "/sitemap.xml") return;
+    if (ASSET_PATHS.has(pathname)) return;
+    await reply.code(404).type("text/plain").send("Not Found");
+  });
 
   // Telegram WebApp static files (admin panel, payment pages)
   await fastify.register(staticPlugin, { root: STATIC_DIR, prefix: "/", wildcard: false });
@@ -122,7 +229,6 @@ export async function startWebServer(bot: Bot): Promise<void> {
   registerWebPaymentRoutes(fastify);
 
   // Frontend SPA (served only if frontend-dist exists)
-  const fs = await import("node:fs");
   if (fs.existsSync(FRONTEND_DIST_DIR)) {
     await fastify.register(staticPlugin, {
       root: FRONTEND_DIST_DIR,
@@ -134,6 +240,12 @@ export async function startWebServer(bot: Bot): Promise<void> {
     fastify.get("/app/", (_req, reply) => reply.sendFile("index.html", FRONTEND_DIST_DIR));
 
     fastify.setNotFoundHandler((req, reply) => {
+      // Двойная защита: хук уже отсекает чужие домены, здесь — на случай,
+      // если запрос дошёл до not-found мимо маршрутов.
+      const cls = classifyHost(req.headers.host);
+      if (cls.kind === "unknown" || cls.kind === "landing") {
+        return reply.code(404).type("text/plain").send("Not Found");
+      }
       const pathname = req.url.split("?")[0] ?? req.url;
       const looksLikeStaticAsset = path.extname(pathname) !== "";
       if (!pathname.startsWith("/app/") || looksLikeStaticAsset) {
@@ -143,44 +255,85 @@ export async function startWebServer(bot: Bot): Promise<void> {
     });
   }
 
-  // Public, crawlable website. It intentionally consists of ready HTML rather
-  // than the authenticated JavaScript application served at /app/.
-  const publicPages: Record<string, string> = {
-    "/": "site/index.html",
-    "/delovoy-portret-iz-foto": "site/delovoy-portret-iz-foto.html",
-    "/uluchshit-gruppovoe-foto": "site/uluchshit-gruppovoe-foto.html",
-    "/restavraciya-staryh-foto": "site/restavraciya-staryh-foto.html",
-    "/raskrasit-cherno-beloe-foto": "site/raskrasit-cherno-beloe-foto.html",
-    "/zhivopisnyy-portret-kak-podarok-na-yubiley": "site/zhivopisnyy-portret-kak-podarok-na-yubiley.html",
-    "/kak-polzovatsya": "site/kak-polzovatsya.html",
+  // Публичные страницы по доменам. Старые пути лендингов
+  // (/uluchshit-gruppovoe-foto и т.п.) сознательно НЕ регистрируются —
+  // они отдают 404 на основном домене (Решение 3).
+  fastify.get("/", (req, reply) => {
+    const cls = classifyHost(req.headers.host);
+    if (cls.kind === "unknown") {
+      return reply.code(404).type("text/plain").send("Not Found");
+    }
+    const rel = cls.kind === "landing" ? cls.route.landingFile : "site/index.html";
+    const html = rendered(rel, pageContext(cls));
+    if (html === null) {
+      return reply.code(404).type("text/plain").send("Not Found");
+    }
+    return reply.type("text/html; charset=utf-8").send(html);
+  });
+
+  // Информационные и служебные страницы — только основной домен
+  // (доступ с тематических доменов отсечён host-gate хуком).
+  const singlePages: Record<string, string> = {
+    "/oferta": "oferta.html",
+    "/privacy": "privacy.html",
     "/o-servise": "site/o-servise.html",
+    "/kak-polzovatsya": "site/kak-polzovatsya.html",
+    "/pay_yookassa": "pay_yookassa.html",
+    "/admin": "admin.html",
   };
-  for (const [url, file] of Object.entries(publicPages)) {
-    fastify.get(url, (_req, reply) => reply.sendFile(file));
+  for (const [url, file] of Object.entries(singlePages)) {
+    fastify.get(url, (_req, reply) => {
+      const html = readContent(file);
+      if (html === null) return reply.code(404).type("text/plain").send("Not Found");
+      return reply.type("text/html; charset=utf-8").send(html);
+    });
   }
-
-  // Static pages
-  fastify.get("/oferta", (_req, reply) => {
-    reply.header("ngrok-skip-browser-warning", "true");
-    return reply.sendFile("oferta.html");
-  });
-
-  fastify.get("/privacy", (_req, reply) => {
-    reply.header("ngrok-skip-browser-warning", "true");
-    return reply.sendFile("privacy.html");
-  });
-
-  fastify.get("/pay_yookassa", (_req, reply) => {
-    reply.header("ngrok-skip-browser-warning", "true");
-    return reply.sendFile("pay_yookassa.html");
-  });
 
   fastify.get("/pay_robokassa", (_req, reply) => {
     return reply.code(404).send();
   });
 
-  fastify.get("/admin", (_req, reply) => {
-    return reply.sendFile("admin.html");
+  // robots.txt и sitemap.xml зависят от домена запроса (раздел 5 базового плана).
+  const LANDING_ROBOTS = "User-agent: *\nDisallow: /\n";
+  fastify.get("/robots.txt", (req, reply) => {
+    const cls = classifyHost(req.headers.host);
+    if (cls.kind === "landing") {
+      return reply.type("text/plain; charset=utf-8").send(LANDING_ROBOTS);
+    }
+    const body = [
+      "User-agent: *",
+      "# Приложение закрыто; примеры картинок нужны лендингам основного домена.",
+      "Disallow: /app/",
+      "Allow: /app/images/",
+      "Disallow: /api/",
+      "Disallow: /uploads/",
+      "Disallow: /admin",
+      "Disallow: /pay_yookassa",
+      "",
+      `Sitemap: ${MAIN_ORIGIN}/sitemap.xml`,
+      "",
+    ].join("\n");
+    return reply.type("text/plain; charset=utf-8").send(body);
+  });
+
+  fastify.get("/sitemap.xml", (req, reply) => {
+    const cls = classifyHost(req.headers.host);
+    const entry = (loc: string, priority: string, changefreq: string): string =>
+      `  <url>\n    <loc>${loc}</loc>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
+    const urls =
+      cls.kind === "landing"
+        ? entry(`https://${cls.host}/`, "1.0", "weekly")
+        : [
+            entry(`${MAIN_ORIGIN}/`, "1.0", "weekly"),
+            entry(`${MAIN_ORIGIN}/kak-polzovatsya`, "0.6", "monthly"),
+            entry(`${MAIN_ORIGIN}/o-servise`, "0.6", "monthly"),
+            entry(`${MAIN_ORIGIN}/oferta`, "0.3", "monthly"),
+            entry(`${MAIN_ORIGIN}/privacy`, "0.3", "monthly"),
+          ].join("\n");
+    const xml =
+      `<?xml version="1.0" encoding="UTF-8"?>\n` +
+      `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+    return reply.type("application/xml; charset=utf-8").send(xml);
   });
 
   // Admin API
