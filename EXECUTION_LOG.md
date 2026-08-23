@@ -167,3 +167,37 @@
 
 ---
 
+### [23.08.2026] Удаление старого домена imagetransformation.ru с этого сервера
+
+**Контекст:** к моменту работ DNS `imagetransformation.ru` уже перенаправлен владельцем на другой сервер (**81.177.160.165**; этот сервер — **145.223.96.83**), т.е. реальный трафик старого домена сюда больше не приходит. Запрос сертификата оставался бесполезным.
+
+**Сделано:**
+1. **Удалён** `/opt/traefik-dynamic/imagetransformation.yml` — роутер `Host(imagetransformation.ru)` c `certResolver: mytlschallenge`, единственный источник запросов LE-сертификата старого домена на этом сервере. Резервная копия: `/root/imagetransformation.yml.removed-20260823.bak` (343 байта, побайтово идентична удалённому).
+2. Traefik file-provider подхватил изменение: в `GET :8080/api/http/routers` роутер `imagetransformation@file` **отсутствует**; остались `portret-*@file` (6 шт.), `upscaler*`, `ritualretouch`, `wellnessworkshop`.
+3. Проверки: `curl --resolve imagetransformation.ru:443:145.223.96.83 https://imagetransformation.ru/` → **404** (маршрута нет, сертификат не выдаётся); все 6 новых доменов → **200** (в т.ч. `raskrasitfoto-ai.ru` — DNS появился с 22.08, п. 4.1 закрыт де-факто).
+4. Репозиторий (шаг 4.9 частично): из `docker-compose.yml` удалены мёртвые traefik-лейблы (docker-provider выключен, лейблы ни на что не влияли), удалена мёртвая копия `deploy/traefik/dynamic/imagetransformation.yml`.
+
+**Содержимое удалённого файла (для восстановления):**
+
+```yaml
+http:
+  routers:
+    imagetransformation:
+      rule: "Host(`imagetransformation.ru`)"
+      entryPoints:
+        - websecure
+      service: imagetransformation
+      tls:
+        certResolver: mytlschallenge
+
+  services:
+    imagetransformation:
+      loadBalancer:
+        servers:
+          - url: "http://imagetransformationtgbot_ts:8080"
+```
+
+**Напоминания по открытым пунктам HANDOFF:** 4.2 (BotFather), 4.3 (webhook ЮKassa → новый домен + тестовый платёж — проверить кабинет: если webhook ещё смотрит на старый домен, он теперь попадает на чужой/другой сервер), 4.4–4.6 (почта и `SMTP_FROM`), 4.8 (A/MX у регистратора — A уже перенесена, MX уточнить), 4.10–4.12.
+
+---
+

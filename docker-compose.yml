@@ -47,14 +47,10 @@ services:
     networks:
       - imagetransformer_net
       - n8n_default
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=n8n_default"
-      - "traefik.http.routers.imagetransformation.rule=Host(`imagetransformation.ru`)"
-      - "traefik.http.routers.imagetransformation.entrypoints=websecure"
-      - "traefik.http.routers.imagetransformation.tls=true"
-      - "traefik.http.routers.imagetransformation.tls.certresolver=mytlschallenge"
-      - "traefik.http.services.imagetransformation.loadbalancer.server.port=8080"
+    # Traefik-лейблов нет: docker-provider у Traefik выключен, маршрутизация и выпуск
+    # сертификатов живут в /opt/traefik-dynamic/portret-domains.yml. Роутер старого
+    # домена imagetransformation.ru удалён с сервера 23.08.2026 (шаг 4.7 HANDOFF;
+    # бэкап: /root/imagetransformation.yml.removed-20260823.bak).
 
 volumes:
   postgres_data:

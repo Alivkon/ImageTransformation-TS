@@ -20,7 +20,7 @@ ImageTransformationTGBot-TS (`/opt/bots/ImageTransformationTGBot-TS`) — Telegr
 | `semeynoe-foto-ai.ru` | ✅ ЖИВОЙ |
 | `delovoy-portret-ai.ru` | ✅ ЖИВОЙ |
 | `raskrasitfoto-ai.ru` | ❌ **DNS-записи нет вообще** (даже на 1.1.1.1). Роутер в Traefik активен — сертификат выдастся сам после появления DNS |
-| `imagetransformation.ru` | 🟡 Переходно ЖИВОЙ: старый роутер не удалён, отдаёт новый контент. Удаление = точка невозврата |
+| `imagetransformation.ru` | ✅ **Удалён с этого сервера 23.08.2026**: роутер `/opt/traefik-dynamic/imagetransformation.yml` снят, запросы LE-сертификата прекращены; DNS ведёт на 81.177.160.165 (другой сервер). Бэкап роутера: `/root/imagetransformation.yml.removed-20260823.bak`. Остались шаги владельца 4.3/4.8 |
 
 Инфраструктура: контейнер `imagetransformationtgbot_ts` running/**healthy** (новый образ собран и запущен).
 Traefik — контейнер `n8n-traefik-1`, конфиги в `/opt/traefik-dynamic/*.yml` (правки через sudo):
@@ -40,7 +40,7 @@ Traefik — контейнер `n8n-traefik-1`, конфиги в `/opt/traefik-
 | Прод-smoke скрипт | `scripts/prod-smoke.sh` (bash, без аргументов) |
 | Локальный харнесс маршрутизации | `scripts/host-matrix.mts` (порт 8099) |
 | Traefik: новые роутеры | `/opt/traefik-dynamic/portret-domains.yml` |
-| Traefik: СТАРЫЙ роутер (удалить!) | `/opt/traefik-dynamic/imagetransformation.yml` |
+| Traefik: СТАРЫЙ роутер | ~~`/opt/traefik-dynamic/imagetransformation.yml`~~ удалён с сервера 23.08.2026, бэкап в `/root/imagetransformation.yml.removed-20260823.bak`; мёртвая копия из `deploy/` тоже удалена (шаг 4.9) |
 | Git | `main` @ d7dae9a (+ ветка change-domain-name, слита). **НЕ ЗАПУШЕНО в GitHub!** |
 
 ## 4. ЧЕКЛИСТ ОСТАВШИХСЯ ШАГОВ (по порядку)
@@ -56,13 +56,7 @@ Traefik — контейнер `n8n-traefik-1`, конфиги в `/opt/traefik-
 ### Агент (новая сессия) — после каждого пункта владельца
 - [ ] **4.5.** После 4.1: `getent hosts raskrasitfoto-ai.ru` → дождаться IP → `curl -s https://raskrasitfoto-ai.ru/` (cert выдастся автоматически) → прогнать `bash scripts/prod-smoke.sh`.
 - [ ] **4.6.** После 4.4: в серверном `.env` заменить `SMTP_FROM=hello@imagetransformation.ru` → `hello@portret-iz-foto-ai.ru` (строка ~50), затем `sudo docker compose up -d bot` (без rebuild — env читается на старте). Отправить тестовое письмо подтверждения, проверить доставку и ссылку.
-- [ ] **4.7.** После 4.2+4.3+4.6 и **живого тестового платежа**: переспросить владельца «переключено, удаляем старый?» → затем:
-      ```bash
-      sudo rm /opt/traefik-dynamic/imagetransformation.yml   # ⚠️ ТОЧКА НЕВОЗВРАТА
-      sleep 3
-      curl -s http://127.0.0.1:8080/api/http/routers | python3 -c "import json,sys;[print(r['name']) for r in json.load(sys.stdin) if 'imagetransformation' in r['name']]"
-      # ожидание: пусто (остаются только portret-*)
-      ```
+- [x] **4.7.** ✅ Выполнено 23.08.2026: `/opt/traefik-dynamic/imagetransformation.yml` удалён (бэкап `/root/imagetransformation.yml.removed-20260823.bak`), Traefik API подтверждает отсутствие роутера, новые домены живы. Подробности — `EXECUTION_LOG.md`.
 - [ ] **4.8.** Владелец у регистратора: удалить A-запись и MX `imagetransformation.ru`.
 
 ### Этап 8 — чистка (после удаления старого домена)
