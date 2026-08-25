@@ -1,4 +1,3 @@
-# ImageTransformationTGBot-TS
 
 TypeScript-версия бота для трансформации изображений.
 
