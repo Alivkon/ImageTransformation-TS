@@ -104,3 +104,10 @@ sudo docker compose build bot && docker compose up -d bot
 - Бот работает в контейнере `imagetransformationtgbot_ts`
 - PostgreSQL — в контейнере `postgre_imagetransformer_ts` (сервис `postgres` из этого compose)
 - Traefik автоматически выдаёт TLS и роутит трафик на `imagetransformation.ru`
+
+portret-iz-foto-ai.ru
+raskrasitfoto-ai.ru
+restavraciyafoto-ai.ru
+semeynoe-foto-ai.ru
+gruppovoe-foto.ru
+delovoy-portret-ai.ru
