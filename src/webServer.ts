@@ -294,11 +294,16 @@ export async function startWebServer(bot: Bot): Promise<void> {
   });
 
   // robots.txt и sitemap.xml зависят от домена запроса (раздел 5 базового плана).
-  const LANDING_ROBOTS = "User-agent: *\nDisallow: /\n";
+  // Лендинги индексируются (§5 плана миграции: self-canonical + sitemap с URL "/"):
+  // разрешаем сканирование и отдаём свой sitemap. Прежний "Disallow: /" блокировал
+  // сканирование лендингов в GSC/Яндекс Вебмастере. Сервисные пути (/app/, /api/,
+  // /uploads/, /admin, /pay_yookassa) на лендингах и так отвечают 404 через host-gate.
+  const landingRobots = (host: string): string =>
+    ["User-agent: *", "Allow: /", "", `Sitemap: https://${host}/sitemap.xml`, ""].join("\n");
   fastify.get("/robots.txt", (req, reply) => {
     const cls = classifyHost(req.headers.host);
     if (cls.kind === "landing") {
-      return reply.type("text/plain; charset=utf-8").send(LANDING_ROBOTS);
+      return reply.type("text/plain; charset=utf-8").send(landingRobots(cls.host));
     }
     const body = [
       "User-agent: *",
