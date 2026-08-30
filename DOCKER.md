@@ -28,7 +28,7 @@ docker compose version
 Перейдите в каталог проекта:
 
 ```bash
-cd /opt/bots/ImageTransformationTGBot-TS
+cd /opt/bots/PortretizFotoTGBot
 ```
 
 Создайте файл окружения и замените значения-заглушки:
@@ -84,7 +84,7 @@ docker compose logs --tail 100 postgres
 docker compose logs -f bot
 ```
 
-Веб-приложение не публикует порт `8080` на хост. Оно доступно через Traefik по адресу `https://imagetransformation.ru`. Директива `expose` открывает порт только для других контейнеров в Docker-сетях.
+Веб-приложение не публикует порт `8080` на хост. Оно доступно через Traefik по адресу `https://portret-iz-foto-ai.ru`. Директива `expose` открывает порт только для других контейнеров в Docker-сетях.
 
 ## Обновление приложения
 
@@ -134,22 +134,22 @@ docker compose up -d
 Открыть консоль базы:
 
 ```bash
-docker compose exec postgres psql -U postgres -d imagetransformer
+docker compose exec postgres psql -U postgres -d portretizfototgbot
 ```
 
 Создать дамп в текущем каталоге хоста:
 
 ```bash
-docker compose exec -T postgres pg_dump -U postgres -d imagetransformer > backup.sql
+docker compose exec -T postgres pg_dump -U postgres -d portretizfototgbot > backup.sql
 ```
 
 Восстановить базу из дампа:
 
 ```bash
-docker compose exec -T postgres psql -U postgres -d imagetransformer < backup.sql
+docker compose exec -T postgres psql -U postgres -d portretizfototgbot < backup.sql
 ```
 
-Порт PostgreSQL на хост не опубликован. Бот подключается к базе по адресу `postgres:5432` во внутренней сети `imgtransform_net`.
+Порт PostgreSQL на хост не опубликован. Бот подключается к базе по адресу `postgres:5432` во внутренней сети `portretizfototgbot_bot_net`.
 
 ## Диагностика
 
@@ -176,13 +176,13 @@ docker compose exec postgres sh
 Проверить готовность PostgreSQL:
 
 ```bash
-docker compose exec postgres pg_isready -U postgres -d imagetransformer
+docker compose exec postgres pg_isready -U postgres -d portretizfototgbot
 ```
 
 Посмотреть состояние Docker healthcheck приложения:
 
 ```bash
-docker inspect --format='{{json .State.Health}}' imagetransformationtgbot_ts
+docker inspect --format='{{json .State.Health}}' portretizfototgbot_bot
 ```
 
 ### `no such service: app`

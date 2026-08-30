@@ -1,9 +1,9 @@
-# ImageTransformationTGBot-TS
+# PortretizFotoTGBot
 
 ## Пробный запуск (локально через Yarn)
 
 ```bash
-cd /opt/bots/ImageTransformationTGBot-TS
+cd /opt/bots/PortretizFotoTGBot
 
 # 1. Создать .env.local с необходимыми переменными
 cp .env.local.example .env.local
@@ -36,7 +36,7 @@ yarn dev
 Установите зависимости и запустите фронтенд:
 
 ```bash
-cd /home/alivkon/projects/RitualHUB/ImageTransformationTGBot-TS
+cd /opt/bots/PortretizFotoTGBot
 yarn install
 yarn dev:frontend
 ```
@@ -77,7 +77,7 @@ yarn dev
 ## Продакшн-деплой (Docker Compose на сервере)
 
 ```bash
-cd /opt/bots/ImageTransformationTGBot-TS
+cd /opt/bots/PortretizFotoTGBot
 
 # 1. Создать/проверить .env
 nano .env
@@ -95,15 +95,14 @@ docker compose logs -f bot
  # Сборка и перезапуск только программного кода без пересборки БД
 sudo docker compose build bot && docker compose up -d bot
 ```
-
 Собирать проект на хосте перед этим не нужно: `Dockerfile` сам выполняет `yarn build:all`
 внутри образа, а хостовые `dist/` и `node_modules/` в образ не попадают — они в
 `.dockerignore`.
 
 После запуска:
-- Бот работает в контейнере `imagetransformationtgbot_ts`
-- PostgreSQL — в контейнере `postgre_imagetransformer_ts` (сервис `postgres` из этого compose)
-- Traefik автоматически выдаёт TLS и роутит трафик на `imagetransformation.ru`
+- Бот работает в контейнере `portretizfototgbot_bot`
+- PostgreSQL — в контейнере `portretizfototgbot_postgres` (сервис `postgres` из этого compose)
+- Traefik автоматически выдаёт TLS и роутит трафик на `portret-iz-foto-ai.ru`
 
 portret-iz-foto-ai.ru
 raskrasitfoto-ai.ru

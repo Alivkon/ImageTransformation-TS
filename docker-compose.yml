@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: postgre_imagetransformer_ts
+    container_name: portretizfototgbot_postgres
     restart: unless-stopped
     env_file: .env
     # Те же значения, что в docker-compose.local.yml, — чтобы локальная и серверная
@@ -9,7 +9,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_DB: imagetransformer
+      POSTGRES_DB: portretizfototgbot
     volumes:
       - postgres_data:/var/lib/postgresql/data
     # Порт наружу не публикуется: бот ходит к базе по внутренней сети. Раскомментируй,
@@ -17,23 +17,22 @@ services:
     # ports:
     #   - "5434:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d imagetransformer"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d portretizfototgbot"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - imagetransformer_net
+      - bot_net
 
   bot:
     build: .
-    image: imagetransformationtgbot-ts
-    container_name: imagetransformationtgbot_ts
+    container_name: portretizfototgbot_bot
     restart: unless-stopped
     env_file: .env
     environment:
       # Переопределяем DATABASE_URL из .env: внутри сети база доступна по имени сервиса
       # postgres — это контейнер из этого же compose, а не внешний.
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/imagetransformer
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/portretizfototgbot
       # Docker NAT нового провайдера не устанавливает соединение с Telegram.
       # Tinyproxy слушает только gateway общей внутренней Docker-сети.
       TELEGRAM_PROXY_URL: http://172.18.0.1:8888
@@ -45,19 +44,17 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - imagetransformer_net
+      - bot_net
       - n8n_default
     # Traefik-лейблов нет: docker-provider у Traefik выключен, маршрутизация и выпуск
     # сертификатов живут в /opt/traefik-dynamic/portret-domains.yml. Роутер старого
-    # домена imagetransformation.ru удалён с сервера 23.08.2026 (шаг 4.7 HANDOFF;
-    # бэкап: /root/imagetransformation.yml.removed-20260823.bak).
+    # домена удалён с сервера 23.08.2026 (шаг 4.7 HANDOFF, см. reports/EXECUTION_LOG.md).
 
 volumes:
   postgres_data:
     driver: local
 
 networks:
-  imagetransformer_net:
-    name: imgtransform_net
+  bot_net:
   n8n_default:
     external: true

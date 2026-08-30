@@ -97,7 +97,7 @@ docker compose -f docker-compose.local.yml exec bot npm list
 - **PostgreSQL**: localhost:5432
   - Пользователь: `postgres`
   - Пароль: из `.env.local` (POSTGRES_PASSWORD)
-  - База данных: `imagetransformer`
+  - База данных: `portretizfototgbot`
 
 ## Остановка
 
@@ -123,7 +123,7 @@ docker compose -f docker-compose.local.yml down -v
 
 | Параметр | Local | Production |
 |----------|-------|-----------|
-| Сеть | Локальная (imagetransformer_local) | Подключена к n8n_default |
+| Сеть | Локальная (portretizfototgbot_local) | Подключена к n8n_default |
 | Портов открыто | Все (8090, 5432) | Только для bot (8080) |
 | Proxy | Нет | Traefik |
 | SSL/TLS | Нет | Да (с certresolver) |
