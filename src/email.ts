@@ -11,10 +11,10 @@ const transporter = nodemailer.createTransport({
 export async function sendVerificationEmail(email: string, token: string): Promise<void> {
   const link = `${WEBAPP_URL}/api/auth/verify?token=${token}`;
   await transporter.sendMail({
-    from: `"ImageTransformation" <${SMTP_FROM}>`,
+    from: `"Портрет из фото" <${SMTP_FROM}>`,
     to: email,
     bcc: "hello@portret-iz-foto-ai.ru",
-    subject: "Подтвердите email — ImageTransformation",
+    subject: "Подтвердите email — Портрет из фото",
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
         <h2 style="color:#333">Подтверждение email</h2>
