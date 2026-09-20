@@ -1,4 +1,10 @@
-import type { User, Generation, GenerationStatus, AuthResponse } from "./types.js";
+import type {
+  User,
+  Generation,
+  GenerationStatus,
+  AuthResponse,
+  ReviewGenerationPage,
+} from "./types.js";
 
 const TOKEN_KEY = "auth_token";
 
@@ -19,11 +25,11 @@ async function request<T>(
   options: RequestInit = {},
 ): Promise<T> {
   const token = getToken();
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(options.headers as Record<string, string> ?? {}),
-  };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const headers = new Headers(options.headers);
+  if (options.body !== undefined && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+  if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const resp = await fetch(url, { ...options, headers });
 
@@ -115,6 +121,19 @@ export async function getBalance(): Promise<{ balance: number; free_generations:
 
 export async function getPayments(): Promise<{ id: number; amount: number; created_at: string }[]> {
   return request("/api/web/payments");
+}
+
+export async function getReviewGenerations(canReviewAll: boolean, page = 0): Promise<ReviewGenerationPage> {
+  const endpoint = canReviewAll
+    ? `/api/internal/generations?page=${page}`
+    : "/api/web/review-generations";
+  return request<ReviewGenerationPage>(endpoint);
+}
+
+export async function deleteReviewPair(pairKey: string): Promise<void> {
+  await request(`/api/internal/media-pairs/${encodeURIComponent(pairKey)}`, {
+    method: "DELETE",
+  });
 }
 
 // Payments

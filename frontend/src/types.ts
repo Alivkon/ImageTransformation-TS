@@ -4,6 +4,30 @@ export interface User {
   balance: number;
   free_generations: number;
   total_generations: number;
+  can_review_media: boolean;
+}
+
+export interface ReviewGeneration {
+  id: number | null;
+  user: {
+    email: string | null;
+    telegram_username: string | null;
+    telegram_id: number | null;
+  };
+  prompt: string;
+  metadata_available: boolean;
+  pair_key: string;
+  source_url: string;
+  result_url: string;
+  created_at: string;
+  completed_at: string | null;
+  can_delete: boolean;
+}
+
+export interface ReviewGenerationPage {
+  items: ReviewGeneration[];
+  has_more: boolean;
+  next_page: number | null;
 }
 
 export interface Generation {

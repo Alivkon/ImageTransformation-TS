@@ -227,7 +227,7 @@ function buildCard(g: Generation): HTMLElement {
   card.dataset["prompt"] = g.prompt.toLowerCase();
   card.dataset["date"] = g.created_at;
 
-  if (g.status === "completed" && g.result_file_id && g.result_file_id.startsWith("/uploads/")) {
+  if (g.status === "completed" && g.result_file_id) {
     card.innerHTML = `
       <img src="${g.result_file_id}" alt="Result" loading="lazy">
       <div class="gallery-overlay">

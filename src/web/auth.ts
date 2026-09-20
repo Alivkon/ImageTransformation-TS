@@ -12,6 +12,7 @@ import {
   type DbUser,
 } from "../database.js";
 import { sendVerificationEmail } from "../email.js";
+import { MEDIA_REVIEWER_EMAIL } from "../config.js";
 
 const BCRYPT_ROUNDS = 10;
 
@@ -28,6 +29,27 @@ export async function requireAuth(
   const user = await validateWebSession(token);
   if (!user) {
     await reply.code(401).send({ error: "Session expired" });
+    return null;
+  }
+  return user;
+}
+
+export function canReviewMedia(user: DbUser): boolean {
+  return (
+    user.email_verified &&
+    user.media_reviewer &&
+    user.email?.trim().toLowerCase() === MEDIA_REVIEWER_EMAIL
+  );
+}
+
+export async function requireMediaReviewer(
+  req: FastifyRequest,
+  reply: FastifyReply,
+): Promise<DbUser | null> {
+  const user = await requireAuth(req, reply);
+  if (!user) return null;
+  if (!canReviewMedia(user)) {
+    await reply.code(403).send({ error: "Forbidden" });
     return null;
   }
   return user;
@@ -88,6 +110,7 @@ export function registerAuthRoutes(fastify: FastifyInstance): void {
         balance: user.balance,
         free_generations: user.free_generations,
         total_generations: user.total_generations,
+        can_review_media: canReviewMedia(user),
       },
     });
   });
@@ -147,6 +170,7 @@ export function registerAuthRoutes(fastify: FastifyInstance): void {
       balance: user.balance,
       free_generations: user.free_generations,
       total_generations: user.total_generations,
+      can_review_media: canReviewMedia(user),
     });
   });
 }

@@ -30,9 +30,7 @@ function renderRecentGallery(gens: Generation[], navigate: Navigate): void {
         <a
           class="gallery-item gallery-item-link"
           href="${g.result_file_id}"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Открыть сгенерированное изображение"
+          aria-label="Открыть предпросмотр сгенерированного изображения"
         >
           <img src="${g.result_file_id}" alt="Result" loading="lazy">
           <div class="gallery-prompt">${g.prompt.slice(0, 40)}…</div>
