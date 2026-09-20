@@ -50,9 +50,6 @@ async function refreshUserStats(): Promise<void> {
 }
 
 function navigate(page: string, data?: GenerationResult): void {
-  if (page === "review" && !currentUser?.can_review_media) {
-    page = "dashboard";
-  }
   if (data) lastGenerationResult = data;
 
   // Hide all pages
