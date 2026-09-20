@@ -96,7 +96,7 @@ function navigate(page: string, data?: GenerationResult): void {
     void refreshUserStats();
   }
   if (page === "results") initResults(lastGenerationResult, navigate);
-  if (page === "review") void initReviewGallery();
+  if (page === "review") void initReviewGallery(Boolean(user.can_review_media));
 }
 
 function openWalletModal(): void {
@@ -268,7 +268,7 @@ function setupWalletModal(): void {
 
 function setupApp(): void {
   document.querySelectorAll<HTMLElement>("[data-review-nav]").forEach((element) => {
-    element.hidden = !currentUser?.can_review_media;
+    element.hidden = !currentUser;
   });
   if (appReady) return;
   appReady = true;

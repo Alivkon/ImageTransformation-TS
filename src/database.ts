@@ -460,6 +460,24 @@ export async function getReviewGenerationsBySources(
   return result.rows;
 }
 
+export async function getUserReviewGenerations(
+  userId: number,
+): Promise<ReviewGeneration[]> {
+  const result = await pool.query<ReviewGeneration>(
+    `SELECT g.id, g.user_id, u.email, u.username, g.prompt,
+            g.source_file_id, g.result_file_id, g.created_at, g.completed_at
+     FROM generations g
+     JOIN users u ON u.user_id = g.user_id
+     WHERE g.user_id = $1
+       AND g.status = 'completed'
+       AND g.source_file_id IS NOT NULL
+       AND g.result_file_id IS NOT NULL
+     ORDER BY g.created_at DESC, g.id DESC`,
+    [userId],
+  );
+  return result.rows;
+}
+
 export async function markReviewGenerationFilesDeleted(
   sourceFilename: string,
 ): Promise<void> {

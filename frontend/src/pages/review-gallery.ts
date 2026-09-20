@@ -6,6 +6,7 @@ let currentPage = 0;
 let loading = false;
 let hasMore = true;
 let initialized = false;
+let canReviewAll = false;
 
 function escapeHtml(value: string): string {
   return value.replace(
@@ -39,11 +40,24 @@ function userLabel(item: ReviewGeneration): string {
 function card(item: ReviewGeneration): string {
   const itemLabel = item.id === null ? "Архив" : `#${item.id}`;
   const prompt = item.prompt || "Описание не сохранилось";
+  const reviewerIdentity = item.can_delete
+    ? `<div class="review-user">${escapeHtml(userLabel(item))}</div>`
+    : "";
+  const deleteAction = item.can_delete ? `
+      <div class="review-card-actions">
+        <button
+          type="button"
+          class="btn btn-sm review-delete-button"
+          data-review-delete="${escapeHtml(item.pair_key)}"
+        >
+          Удалить
+        </button>
+      </div>` : "";
   return `
     <article class="review-card">
       <div class="review-card-head">
         <div>
-          <div class="review-user">${escapeHtml(userLabel(item))}</div>
+          ${reviewerIdentity}
           <div class="review-date">${escapeHtml(formatDate(item.created_at))}</div>
         </div>
         <span class="review-id">${itemLabel}</span>
@@ -66,15 +80,7 @@ function card(item: ReviewGeneration): string {
         <span>Запрос</span>
         <p>${escapeHtml(prompt)}</p>
       </div>
-      <div class="review-card-actions">
-        <button
-          type="button"
-          class="btn btn-sm review-delete-button"
-          data-review-delete="${escapeHtml(item.pair_key)}"
-        >
-          Удалить
-        </button>
-      </div>
+      ${deleteAction}
     </article>`;
 }
 
@@ -126,7 +132,7 @@ async function loadNextPage(): Promise<void> {
   }
 
   try {
-    const response = await getReviewGenerations(currentPage);
+    const response = await getReviewGenerations(canReviewAll, currentPage);
     if (currentPage === 0) grid.innerHTML = "";
     grid.insertAdjacentHTML("beforeend", response.items.map(card).join(""));
     currentPage = response.next_page ?? currentPage + 1;
@@ -135,7 +141,7 @@ async function loadNextPage(): Promise<void> {
     if (loadMore) loadMore.hidden = !hasMore;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Неизвестная ошибка";
-    notifications.error(`Не удалось загрузить служебную галерею: ${message}`);
+    notifications.error(`Не удалось загрузить галерею: ${message}`);
   } finally {
     loading = false;
     if (loadMore) {
@@ -145,11 +151,20 @@ async function loadNextPage(): Promise<void> {
   }
 }
 
-export async function initReviewGallery(): Promise<void> {
+export async function initReviewGallery(reviewAll: boolean): Promise<void> {
+  canReviewAll = reviewAll;
   currentPage = 0;
   hasMore = true;
   const grid = document.getElementById("review-gallery-grid");
   if (grid) grid.innerHTML = "";
+  const kicker = document.getElementById("review-kicker");
+  if (kicker) kicker.hidden = !canReviewAll;
+  const description = document.getElementById("review-description");
+  if (description) {
+    description.textContent = canReviewAll
+      ? "Завершённые обработки пользователей"
+      : "Ваши завершённые обработки";
+  }
 
   if (!initialized) {
     initialized = true;

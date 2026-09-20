@@ -123,8 +123,11 @@ export async function getPayments(): Promise<{ id: number; amount: number; creat
   return request("/api/web/payments");
 }
 
-export async function getReviewGenerations(page = 0): Promise<ReviewGenerationPage> {
-  return request<ReviewGenerationPage>(`/api/internal/generations?page=${page}`);
+export async function getReviewGenerations(canReviewAll: boolean, page = 0): Promise<ReviewGenerationPage> {
+  const endpoint = canReviewAll
+    ? `/api/internal/generations?page=${page}`
+    : "/api/web/review-generations";
+  return request<ReviewGenerationPage>(endpoint);
 }
 
 export async function deleteReviewPair(pairKey: string): Promise<void> {
