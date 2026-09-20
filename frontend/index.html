@@ -69,6 +69,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <button class="nav-item" data-page="wallet">
                         <span>💳Оплатить</span>
                     </button>
+                    <button class="nav-item" data-page="review" data-review-nav hidden>
+                        <span>Проверка</span>
+                    </button>
                 </nav>
 
                 <div class="header-actions">
@@ -359,6 +362,23 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                 Начните генерацию
                             </button>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page" id="page-review" data-page="review">
+                <div class="container review-container">
+                    <div class="review-heading">
+                        <div>
+                            <p class="review-kicker">Служебный раздел</p>
+                            <h2>Было / Стало</h2>
+                        </div>
+                        <p>Завершённые обработки пользователей</p>
+                    </div>
+                    <div class="review-gallery-grid" id="review-gallery-grid"></div>
+                    <div class="review-empty" id="review-empty" hidden>Завершённых обработок пока нет.</div>
+                    <div class="review-pagination">
+                        <button class="btn btn-secondary" id="review-load-more" hidden>Показать ещё</button>
                     </div>
                 </div>
             </section>

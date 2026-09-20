@@ -15,10 +15,12 @@ import {
   getGenerationById,
   getUserGenerations,
   getUserPayments,
+  isUploadOwnedByUser,
 } from "../database.js";
 import { generateImage, KieError } from "../services/kieai.js";
 import { GENERATION_COST, ADMIN_ID, DISCOUNTED_COST, DISCOUNTED_USER_IDS } from "../config.js";
 import { requireAuth } from "./auth.js";
+import { createSignedMediaPath } from "./mediaRoute.js";
 
 const UPLOADS_DIR = path.resolve(__dirname, "../../uploads");
 
@@ -81,9 +83,16 @@ export function registerGenerateRoute(fastify: FastifyInstance, bot: Bot): void 
 
     // Derive absolute file path from URL like "/uploads/abc.jpg"
     const filename = path.basename(uploadUrl);
+    if (!(await isUploadOwnedByUser(dbUser.user_id, filename))) {
+      return reply.code(403).send({ error: "Upload does not belong to current user" });
+    }
     const localFilePath = path.join(UPLOADS_DIR, filename);
-    // Public URL for KIE.ai to fetch the uploaded image
-    const publicImageUrl = `${WEBAPP_URL}${uploadUrl}`;
+    // KIE.ai gets a short-lived URL; uploaded files are never public permanently.
+    const signedSourcePath = createSignedMediaPath(filename);
+    if (!signedSourcePath) {
+      return reply.code(400).send({ error: "Unsupported image file" });
+    }
+    const publicImageUrl = new URL(signedSourcePath, WEBAPP_URL).toString();
 
     const generationId = await createGeneration(dbUser.user_id, prompt, filename, cost, isFree);
 
@@ -140,7 +149,10 @@ export function registerGenerateRoute(fastify: FastifyInstance, bot: Bot): void 
 
     return reply.send({
       status: gen["status"],
-      result_url: gen["result_file_id"] ?? null,
+      result_url:
+        typeof gen["result_file_id"] === "string"
+          ? createSignedMediaPath(gen["result_file_id"])
+          : null,
     });
   });
 
@@ -158,6 +170,14 @@ export function registerGenerateRoute(fastify: FastifyInstance, bot: Bot): void 
       return reply.send(
         rows.map((r) => ({
           ...r,
+          source_file_id:
+            typeof r["source_file_id"] === "string"
+              ? createSignedMediaPath(r["source_file_id"])
+              : null,
+          result_file_id:
+            typeof r["result_file_id"] === "string"
+              ? createSignedMediaPath(r["result_file_id"])
+              : null,
           created_at: r["created_at"] instanceof Date ? (r["created_at"] as Date).toISOString() : r["created_at"],
           completed_at: r["completed_at"] instanceof Date ? (r["completed_at"] as Date).toISOString() : r["completed_at"],
         })),

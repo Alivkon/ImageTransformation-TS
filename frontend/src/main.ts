@@ -7,6 +7,7 @@ import { initResults } from "./pages/results.js";
 import { initCompare, initGallery, setSelectedExamplePrompt } from "./pages/gallery.js";
 import { exampleCases } from "./data/example-prompts.js";
 import { initWallet, updateWalletBalance } from "./pages/wallet.js";
+import { initReviewGallery } from "./pages/review-gallery.js";
 import { getMe, login, register, logout, setToken, resendVerification, sleep, getBalance, confirmYookassaPayment } from "./api.js";
 import { trackPageView } from "./metrika.js";
 import type { User } from "./types.js";
@@ -21,7 +22,7 @@ let appReady = false;
 
 // ── Navigation ─────────────────────────────────────────────────────────────
 
-const PAGES = ["dashboard", "generate", "gallery", "results"] as const;
+const PAGES = ["dashboard", "generate", "gallery", "results", "review"] as const;
 type Page = (typeof PAGES)[number];
 
 async function refreshUserStats(): Promise<void> {
@@ -48,6 +49,9 @@ async function refreshUserStats(): Promise<void> {
 }
 
 function navigate(page: string, data?: GenerationResult): void {
+  if (page === "review" && !currentUser?.can_review_media) {
+    page = "dashboard";
+  }
   if (data) lastGenerationResult = data;
 
   // Hide all pages
@@ -68,6 +72,11 @@ function navigate(page: string, data?: GenerationResult): void {
   });
 
   currentPage = page;
+  const appRoot = import.meta.env.BASE_URL;
+  const nextPath = page === "review" ? `${appRoot}internal/gallery` : appRoot;
+  if (window.location.pathname !== nextPath) {
+    window.history.replaceState({}, "", nextPath);
+  }
   window.scrollTo(0, 0);
   trackPageView(page);
 
@@ -89,6 +98,7 @@ function navigate(page: string, data?: GenerationResult): void {
     void refreshUserStats();
   }
   if (page === "results") initResults(lastGenerationResult, navigate);
+  if (page === "review") void initReviewGallery();
 }
 
 function openWalletModal(): void {
@@ -259,6 +269,9 @@ function setupWalletModal(): void {
 // ── App init ───────────────────────────────────────────────────────────────
 
 function setupApp(): void {
+  document.querySelectorAll<HTMLElement>("[data-review-nav]").forEach((element) => {
+    element.hidden = !currentUser?.can_review_media;
+  });
   if (appReady) return;
   appReady = true;
   setupNav();
@@ -273,6 +286,7 @@ async function main(): Promise<void> {
   // Чистим служебные query-параметры, не выходя за пределы приложения: корень сайта
   // отдаёт публичные страницы, а не этот SPA.
   const appRoot = import.meta.env.BASE_URL;
+  const requestedReview = window.location.pathname === `${appRoot}internal/gallery`;
 
   // После перехода по ссылке верификации сервер редиректит на /app/?session=TOKEN
   const params = new URLSearchParams(window.location.search);
@@ -342,9 +356,13 @@ async function main(): Promise<void> {
         notifications.info("Платёж обрабатывается. Баланс обновится в ближайшее время.");
       })();
     } else {
-      navigate(examplePrompt ? "generate" : "dashboard");
+      navigate(requestedReview ? "review" : examplePrompt ? "generate" : "dashboard");
     }
   } catch {
+    if (requestedReview) {
+      showAuthOverlay(() => navigate("review"));
+      return;
+    }
     hideAuthOverlay();
     setupApp();
     navigate("generate");

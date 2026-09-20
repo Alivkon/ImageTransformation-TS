@@ -1,4 +1,10 @@
-import type { User, Generation, GenerationStatus, AuthResponse } from "./types.js";
+import type {
+  User,
+  Generation,
+  GenerationStatus,
+  AuthResponse,
+  ReviewGenerationPage,
+} from "./types.js";
 
 const TOKEN_KEY = "auth_token";
 
@@ -115,6 +121,10 @@ export async function getBalance(): Promise<{ balance: number; free_generations:
 
 export async function getPayments(): Promise<{ id: number; amount: number; created_at: string }[]> {
   return request("/api/web/payments");
+}
+
+export async function getReviewGenerations(page = 0): Promise<ReviewGenerationPage> {
+  return request<ReviewGenerationPage>(`/api/internal/generations?page=${page}`);
 }
 
 // Payments

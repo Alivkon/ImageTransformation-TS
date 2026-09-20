@@ -11,6 +11,8 @@ import { registerAuthRoutes } from "./web/auth.js";
 import { registerUploadRoute } from "./web/uploadRoute.js";
 import { registerGenerateRoute } from "./web/generateRoute.js";
 import { registerWebPaymentRoutes } from "./web/paymentRoute.js";
+import { registerMediaRoute } from "./web/mediaRoute.js";
+import { registerReviewRoutes } from "./web/reviewRoute.js";
 import IPCIDR from "ip-cidr";
 import {
   ADMIN_ID,
@@ -134,7 +136,6 @@ function rowsToJson(rows: Record<string, unknown>[]): unknown[] {
   );
 }
 
-const UPLOADS_DIR = path.resolve(__dirname, "../uploads");
 const FRONTEND_DIST_DIR = path.resolve(__dirname, "../frontend-dist");
 
 export async function startWebServer(bot: Bot): Promise<void> {
@@ -149,10 +150,14 @@ export async function startWebServer(bot: Bot): Promise<void> {
   await fastify.register(formbody);
   await fastify.register(multipart);
 
-  fastify.addHook("onSend", async (_req, reply, payload) => {
+  fastify.addHook("onSend", async (req, reply, payload) => {
     const contentType = String(reply.getHeader("content-type") ?? "");
     if (contentType.startsWith("text/html")) {
       reply.header("Link", '</llms.txt>; rel="describedby"; type="text/markdown"');
+    }
+    if ((req.url.split("?")[0] ?? "") === "/app/internal/gallery") {
+      reply.header("X-Robots-Tag", "noindex, nofollow, noarchive");
+      reply.header("Cache-Control", "private, no-store");
     }
     return payload;
   });
@@ -229,18 +234,13 @@ export async function startWebServer(bot: Bot): Promise<void> {
   // Telegram WebApp static files (admin panel, payment pages)
   await fastify.register(staticPlugin, { root: STATIC_DIR, prefix: "/", wildcard: false });
 
-  // User uploads (photos + generated results)
-  await fastify.register(staticPlugin, {
-    root: UPLOADS_DIR,
-    prefix: "/uploads/",
-    decorateReply: false,
-  });
-
   // Register web API routes
   registerAuthRoutes(fastify);
   registerUploadRoute(fastify);
+  registerMediaRoute(fastify);
   registerGenerateRoute(fastify, bot);
   registerWebPaymentRoutes(fastify);
+  registerReviewRoutes(fastify);
 
   // Frontend SPA (served only if frontend-dist exists)
   if (fs.existsSync(FRONTEND_DIST_DIR)) {

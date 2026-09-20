@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { Pool, types } from "pg";
-import { DATABASE_URL, FREE_GENERATIONS } from "./config.js";
+import { DATABASE_URL, FREE_GENERATIONS, MEDIA_REVIEWER_EMAIL } from "./config.js";
 
 // Parse BIGINT (OID 20) and BIGSERIAL as Number — safe for Telegram IDs
 types.setTypeParser(20, (val: string) => parseInt(val, 10));
@@ -67,10 +67,17 @@ export async function initDb(): Promise<void> {
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS media_reviewer BOOLEAN DEFAULT FALSE`);
     await client.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email
       ON users (email) WHERE email IS NOT NULL
     `);
+    await client.query(
+      `UPDATE users
+       SET media_reviewer = TRUE
+       WHERE LOWER(email) = $1 AND email_verified = TRUE`,
+      [MEDIA_REVIEWER_EMAIL],
+    );
 
     // Email verification tokens
     await client.query(`
@@ -117,6 +124,8 @@ export interface DbUser {
   username: string | null;
   first_name: string;
   email: string | null;
+  email_verified: boolean;
+  media_reviewer: boolean;
   balance: number;
   free_generations: number;
   total_generations: number;
@@ -422,6 +431,37 @@ export async function getAdminGenerations(limit = 50, offset = 0): Promise<Recor
   return result.rows;
 }
 
+export interface ReviewGeneration {
+  id: number;
+  user_id: number;
+  email: string | null;
+  username: string | null;
+  prompt: string | null;
+  source_file_id: string;
+  result_file_id: string;
+  created_at: Date;
+  completed_at: Date | null;
+}
+
+export async function getReviewGenerations(
+  limit = 31,
+  offset = 0,
+): Promise<ReviewGeneration[]> {
+  const result = await pool.query<ReviewGeneration>(
+    `SELECT g.id, g.user_id, u.email, u.username, g.prompt,
+            g.source_file_id, g.result_file_id, g.created_at, g.completed_at
+     FROM generations g
+     JOIN users u ON u.user_id = g.user_id
+     WHERE g.status = 'completed'
+       AND g.source_file_id IS NOT NULL
+       AND g.result_file_id LIKE '/uploads/%'
+     ORDER BY g.created_at DESC, g.id DESC
+     LIMIT $1 OFFSET $2`,
+    [limit, offset],
+  );
+  return result.rows;
+}
+
 
 export async function getAdminPayments(limit = 50, offset = 0): Promise<Record<string, unknown>[]> {
   const result = await pool.query(
@@ -531,7 +571,16 @@ export async function consumeEmailVerification(token: string): Promise<number | 
 }
 
 export async function markEmailVerified(userId: number): Promise<void> {
-  await pool.query("UPDATE users SET email_verified = TRUE WHERE user_id = $1", [userId]);
+  await pool.query(
+    `UPDATE users
+     SET email_verified = TRUE,
+         media_reviewer = CASE
+           WHEN LOWER(email) = $2 THEN TRUE
+           ELSE media_reviewer
+         END
+     WHERE user_id = $1`,
+    [userId, MEDIA_REVIEWER_EMAIL],
+  );
 }
 
 export async function saveUpload(
@@ -544,6 +593,17 @@ export async function saveUpload(
     [userId, filename, originalName],
   );
   return result.rows[0]!.id;
+}
+
+export async function isUploadOwnedByUser(
+  userId: number,
+  filename: string,
+): Promise<boolean> {
+  const result = await pool.query(
+    "SELECT 1 FROM uploads WHERE user_id = $1 AND filename = $2 LIMIT 1",
+    [userId, filename],
+  );
+  return result.rowCount === 1;
 }
 
 export async function getUserGenerations(
