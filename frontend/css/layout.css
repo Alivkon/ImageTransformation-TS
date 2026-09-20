@@ -325,6 +325,13 @@
     cursor: zoom-in;
 }
 
+#recent-gallery .gallery-item img,
+#gallery-grid .gallery-item img,
+.results-grid .result-image,
+.upload-preview img {
+    cursor: zoom-in;
+}
+
 .review-image-button:focus-visible {
     outline: 3px solid var(--primary);
     outline-offset: -3px;

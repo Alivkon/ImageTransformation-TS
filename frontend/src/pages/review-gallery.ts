@@ -78,40 +78,6 @@ function card(item: ReviewGeneration): string {
     </article>`;
 }
 
-function setupPreview(): void {
-  const preview = document.getElementById("review-preview");
-  const image = document.getElementById("review-preview-image") as HTMLImageElement | null;
-  const closeButton = document.getElementById("review-preview-close") as HTMLButtonElement | null;
-  const grid = document.getElementById("review-gallery-grid");
-  if (!preview || !image || !closeButton || !grid) return;
-
-  const close = (): void => {
-    preview.classList.remove("active");
-    preview.setAttribute("aria-hidden", "true");
-    image.removeAttribute("src");
-    document.body.style.overflow = "";
-  };
-
-  grid.addEventListener("click", (event) => {
-    const button = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>(
-      "[data-review-image]",
-    );
-    const src = button?.dataset["reviewImage"];
-    if (!src) return;
-
-    image.src = src;
-    preview.classList.add("active");
-    preview.setAttribute("aria-hidden", "false");
-    document.body.style.overflow = "hidden";
-    closeButton.focus();
-  });
-
-  closeButton.addEventListener("click", close);
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && preview.classList.contains("active")) close();
-  });
-}
-
 function setupDeletion(): void {
   const grid = document.getElementById("review-gallery-grid");
   if (!grid) return;
@@ -187,7 +153,6 @@ export async function initReviewGallery(): Promise<void> {
 
   if (!initialized) {
     initialized = true;
-    setupPreview();
     setupDeletion();
     document.getElementById("review-load-more")?.addEventListener("click", () => {
       void loadNextPage();

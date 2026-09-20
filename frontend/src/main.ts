@@ -1,4 +1,5 @@
 import { initTheme } from "./components/theme.js";
+import { initImagePreview } from "./components/image-preview.js";
 import { notifications } from "./components/notifications.js";
 import { initDashboard } from "./pages/dashboard.js";
 import { initGenerate } from "./pages/generate.js";
@@ -371,6 +372,7 @@ async function main(): Promise<void> {
 
 document.addEventListener("DOMContentLoaded", () => {
   initCompare();
+  initImagePreview();
   void main();
 });
 
