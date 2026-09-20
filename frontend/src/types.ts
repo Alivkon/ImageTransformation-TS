@@ -8,13 +8,14 @@ export interface User {
 }
 
 export interface ReviewGeneration {
-  id: number;
+  id: number | null;
   user: {
     email: string | null;
     telegram_username: string | null;
     telegram_id: number | null;
   };
   prompt: string;
+  metadata_available: boolean;
   source_url: string;
   result_url: string;
   created_at: string;

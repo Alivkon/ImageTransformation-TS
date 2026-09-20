@@ -1,9 +1,45 @@
+import fs from "node:fs";
+import path from "node:path";
 import type { FastifyInstance } from "fastify";
-import { getReviewGenerations } from "../database.js";
+import { getReviewGenerationsBySources } from "../database.js";
 import { requireMediaReviewer } from "./auth.js";
 import { createSignedMediaPath } from "./mediaRoute.js";
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 10;
+const UPLOADS_DIR = path.resolve(__dirname, "../../uploads");
+const SOURCE_PATTERN = /^(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})_([a-f0-9-]+)_src\.jpg$/i;
+
+interface LocalPair {
+  sourceFilename: string;
+  resultFilename: string;
+  createdAt: Date;
+}
+
+function scanLocalPairs(): LocalPair[] {
+  let filenames: string[];
+  try {
+    filenames = fs.readdirSync(UPLOADS_DIR);
+  } catch {
+    return [];
+  }
+  const available = new Set(filenames);
+
+  return filenames.flatMap((sourceFilename) => {
+    const match = SOURCE_PATTERN.exec(sourceFilename);
+    if (!match) return [];
+
+    const resultFilename = sourceFilename.replace(/_src\.jpg$/i, "_result.jpg");
+    if (!available.has(resultFilename)) return [];
+
+    const [, year, month, day, hour, minute, second] = match;
+    const createdAt = new Date(
+      `${year}-${month}-${day}T${hour}:${minute}:${second}Z`,
+    );
+    if (Number.isNaN(createdAt.getTime())) return [];
+
+    return [{ sourceFilename, resultFilename, createdAt }];
+  }).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+}
 
 export function registerReviewRoutes(fastify: FastifyInstance): void {
   fastify.get<{ Querystring: { page?: string } }>(
@@ -13,24 +49,31 @@ export function registerReviewRoutes(fastify: FastifyInstance): void {
       if (!reviewer) return;
 
       const page = Math.max(0, parseInt(req.query.page ?? "0", 10) || 0);
-      const rows = await getReviewGenerations(PAGE_SIZE + 1, page * PAGE_SIZE);
-      const hasMore = rows.length > PAGE_SIZE;
-      const items = rows.slice(0, PAGE_SIZE).flatMap((row) => {
-        const sourceUrl = createSignedMediaPath(row.source_file_id);
-        const resultUrl = createSignedMediaPath(row.result_file_id);
+      const allPairs = scanLocalPairs();
+      const pagePairs = allPairs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+      const rows = await getReviewGenerationsBySources(
+        pagePairs.map((pair) => pair.sourceFilename),
+      );
+      const rowsBySource = new Map(rows.map((row) => [row.source_file_id, row]));
+      const hasMore = allPairs.length > (page + 1) * PAGE_SIZE;
+      const items = pagePairs.flatMap((pair) => {
+        const row = rowsBySource.get(pair.sourceFilename);
+        const sourceUrl = createSignedMediaPath(pair.sourceFilename);
+        const resultUrl = createSignedMediaPath(pair.resultFilename);
         if (!sourceUrl || !resultUrl) return [];
         return [{
-          id: row.id,
+          id: row?.id ?? null,
           user: {
-            email: row.email,
-            telegram_username: row.username,
-            telegram_id: row.email ? null : row.user_id,
+            email: row?.email ?? null,
+            telegram_username: row?.username ?? null,
+            telegram_id: row && !row.email ? row.user_id : null,
           },
-          prompt: row.prompt ?? "",
+          prompt: row?.prompt ?? "",
+          metadata_available: Boolean(row),
           source_url: sourceUrl,
           result_url: resultUrl,
-          created_at: row.created_at.toISOString(),
-          completed_at: row.completed_at?.toISOString() ?? null,
+          created_at: (row?.created_at ?? pair.createdAt).toISOString(),
+          completed_at: row?.completed_at?.toISOString() ?? null,
         }];
       });
 

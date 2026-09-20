@@ -28,6 +28,7 @@ function formatDate(value: string): string {
 }
 
 function userLabel(item: ReviewGeneration): string {
+  if (!item.metadata_available) return "Архивный файл · пользователь не найден в БД";
   if (item.user.email) return item.user.email;
   const username = item.user.telegram_username
     ? `@${item.user.telegram_username}`
@@ -36,6 +37,8 @@ function userLabel(item: ReviewGeneration): string {
 }
 
 function card(item: ReviewGeneration): string {
+  const itemLabel = item.id === null ? "Архив" : `#${item.id}`;
+  const prompt = item.prompt || "Описание не сохранилось";
   return `
     <article class="review-card">
       <div class="review-card-head">
@@ -43,25 +46,25 @@ function card(item: ReviewGeneration): string {
           <div class="review-user">${escapeHtml(userLabel(item))}</div>
           <div class="review-date">${escapeHtml(formatDate(item.created_at))}</div>
         </div>
-        <span class="review-id">#${item.id}</span>
+        <span class="review-id">${itemLabel}</span>
       </div>
       <div class="review-pair">
         <figure>
           <figcaption>Было</figcaption>
           <a href="${item.source_url}" target="_blank" rel="noopener">
-            <img src="${item.source_url}" alt="Исходное изображение генерации ${item.id}" loading="lazy">
+            <img src="${item.source_url}" alt="Исходное изображение" loading="lazy">
           </a>
         </figure>
         <figure>
           <figcaption>Стало</figcaption>
           <a href="${item.result_url}" target="_blank" rel="noopener">
-            <img src="${item.result_url}" alt="Результат генерации ${item.id}" loading="lazy">
+            <img src="${item.result_url}" alt="Результат генерации" loading="lazy">
           </a>
         </figure>
       </div>
       <div class="review-prompt">
         <span>Запрос</span>
-        <p>${escapeHtml(item.prompt)}</p>
+        <p>${escapeHtml(prompt)}</p>
       </div>
     </article>`;
 }

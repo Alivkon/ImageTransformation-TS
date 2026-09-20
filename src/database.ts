@@ -443,21 +443,19 @@ export interface ReviewGeneration {
   completed_at: Date | null;
 }
 
-export async function getReviewGenerations(
-  limit = 31,
-  offset = 0,
+export async function getReviewGenerationsBySources(
+  sourceFilenames: string[],
 ): Promise<ReviewGeneration[]> {
+  if (sourceFilenames.length === 0) return [];
   const result = await pool.query<ReviewGeneration>(
     `SELECT g.id, g.user_id, u.email, u.username, g.prompt,
             g.source_file_id, g.result_file_id, g.created_at, g.completed_at
      FROM generations g
      JOIN users u ON u.user_id = g.user_id
      WHERE g.status = 'completed'
-       AND g.source_file_id IS NOT NULL
-       AND g.result_file_id LIKE '/uploads/%'
-     ORDER BY g.created_at DESC, g.id DESC
-     LIMIT $1 OFFSET $2`,
-    [limit, offset],
+       AND g.source_file_id = ANY($1::text[])
+     ORDER BY g.created_at DESC, g.id DESC`,
+    [sourceFilenames],
   );
   return result.rows;
 }
