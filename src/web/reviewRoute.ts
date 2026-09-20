@@ -1,7 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { FastifyInstance } from "fastify";
-import { getReviewGenerationsBySources } from "../database.js";
+import {
+  getReviewGenerationsBySources,
+  markReviewGenerationFilesDeleted,
+} from "../database.js";
 import { requireMediaReviewer } from "./auth.js";
 import { createSignedMediaPath } from "./mediaRoute.js";
 
@@ -66,6 +69,7 @@ export function registerReviewRoutes(fastify: FastifyInstance): void {
           },
           prompt: row?.prompt ?? "",
           metadata_available: Boolean(row),
+          pair_key: pair.sourceFilename,
           source_url: sourceUrl,
           result_url: resultUrl,
           created_at: (row?.created_at ?? pair.createdAt).toISOString(),
@@ -85,6 +89,68 @@ export function registerReviewRoutes(fastify: FastifyInstance): void {
           has_more: false,
           next_page: null,
         });
+    },
+  );
+
+  fastify.delete<{ Params: { sourceFilename: string } }>(
+    "/api/internal/media-pairs/:sourceFilename",
+    async (req, reply) => {
+      const reviewer = await requireMediaReviewer(req, reply);
+      if (!reviewer) return;
+
+      const sourceFilename = req.params.sourceFilename;
+      if (!SOURCE_PATTERN.test(sourceFilename) || path.basename(sourceFilename) !== sourceFilename) {
+        return reply.code(400).send({ error: "Invalid media pair" });
+      }
+
+      const resultFilename = sourceFilename.replace(/_src\.jpg$/i, "_result.jpg");
+      const sourcePath = path.join(UPLOADS_DIR, sourceFilename);
+      const resultPath = path.join(UPLOADS_DIR, resultFilename);
+
+      try {
+        const [sourceStat, resultStat] = await Promise.all([
+          fs.promises.stat(sourcePath),
+          fs.promises.stat(resultPath),
+        ]);
+        if (!sourceStat.isFile() || !resultStat.isFile()) {
+          return reply.code(404).send({ error: "Media pair not found" });
+        }
+      } catch {
+        return reply.code(404).send({ error: "Media pair not found" });
+      }
+
+      try {
+        await Promise.all([
+          fs.promises.unlink(sourcePath),
+          fs.promises.unlink(resultPath),
+        ]);
+      } catch (error) {
+        req.log.error(
+          { error, sourceFilename, reviewerUserId: reviewer.user_id },
+          "failed to delete media pair",
+        );
+        return reply.code(500).send({ error: "Failed to delete media pair" });
+      }
+
+      try {
+        await markReviewGenerationFilesDeleted(sourceFilename);
+      } catch (error) {
+        req.log.error(
+          { error, sourceFilename, reviewerUserId: reviewer.user_id },
+          "media files deleted but database metadata cleanup failed",
+        );
+      }
+
+      req.log.warn(
+        {
+          sourceFilename,
+          resultFilename,
+          reviewerUserId: reviewer.user_id,
+          ip: req.ip,
+        },
+        "media pair permanently deleted",
+      );
+      return reply.header("Cache-Control", "private, no-store").send({ deleted: true });
     },
   );
 }

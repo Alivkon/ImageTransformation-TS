@@ -127,6 +127,12 @@ export async function getReviewGenerations(page = 0): Promise<ReviewGenerationPa
   return request<ReviewGenerationPage>(`/api/internal/generations?page=${page}`);
 }
 
+export async function deleteReviewPair(pairKey: string): Promise<void> {
+  await request(`/api/internal/media-pairs/${encodeURIComponent(pairKey)}`, {
+    method: "DELETE",
+  });
+}
+
 // Payments
 export async function createYookassaPayment(amount: number): Promise<{ confirmation_token: string; payment_id: string }> {
   return request("/api/web/payment/yookassa", {

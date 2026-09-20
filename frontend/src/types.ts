@@ -16,6 +16,7 @@ export interface ReviewGeneration {
   };
   prompt: string;
   metadata_available: boolean;
+  pair_key: string;
   source_url: string;
   result_url: string;
   created_at: string;

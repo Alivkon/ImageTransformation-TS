@@ -460,6 +460,17 @@ export async function getReviewGenerationsBySources(
   return result.rows;
 }
 
+export async function markReviewGenerationFilesDeleted(
+  sourceFilename: string,
+): Promise<void> {
+  await pool.query(
+    `UPDATE generations
+     SET source_file_id = NULL, result_file_id = NULL, status = 'deleted'
+     WHERE source_file_id = $1`,
+    [sourceFilename],
+  );
+}
+
 
 export async function getAdminPayments(limit = 50, offset = 0): Promise<Record<string, unknown>[]> {
   const result = await pool.query(

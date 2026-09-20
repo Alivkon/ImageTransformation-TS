@@ -404,6 +404,24 @@
     overflow-wrap: anywhere;
 }
 
+.review-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 var(--space-md) var(--space-md);
+}
+
+.review-delete-button {
+    border: 1px solid var(--error);
+    background: transparent;
+    color: var(--error);
+}
+
+.review-delete-button:hover:not(:disabled),
+.review-delete-button:focus-visible {
+    background: var(--error);
+    color: #fff;
+}
+
 .review-empty {
     padding: var(--space-2xl);
     text-align: center;

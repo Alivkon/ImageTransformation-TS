@@ -1,4 +1,4 @@
-import { getReviewGenerations } from "../api.js";
+import { deleteReviewPair, getReviewGenerations } from "../api.js";
 import { notifications } from "../components/notifications.js";
 import type { ReviewGeneration } from "../types.js";
 
@@ -66,6 +66,15 @@ function card(item: ReviewGeneration): string {
         <span>Запрос</span>
         <p>${escapeHtml(prompt)}</p>
       </div>
+      <div class="review-card-actions">
+        <button
+          type="button"
+          class="btn btn-sm review-delete-button"
+          data-review-delete="${escapeHtml(item.pair_key)}"
+        >
+          Удалить
+        </button>
+      </div>
     </article>`;
 }
 
@@ -100,6 +109,40 @@ function setupPreview(): void {
   closeButton.addEventListener("click", close);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && preview.classList.contains("active")) close();
+  });
+}
+
+function setupDeletion(): void {
+  const grid = document.getElementById("review-gallery-grid");
+  if (!grid) return;
+
+  grid.addEventListener("click", (event) => {
+    const button = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>(
+      "[data-review-delete]",
+    );
+    const pairKey = button?.dataset["reviewDelete"];
+    if (!button || !pairKey) return;
+
+    const confirmed = window.confirm(
+      "Удалить исходное и итоговое изображения с сервера? Это действие нельзя отменить.",
+    );
+    if (!confirmed) return;
+
+    button.disabled = true;
+    button.textContent = "Удаление...";
+    void deleteReviewPair(pairKey)
+      .then(() => {
+        button.closest(".review-card")?.remove();
+        notifications.success("Пара изображений удалена с сервера");
+        const empty = document.getElementById("review-empty");
+        if (empty && !grid.querySelector(".review-card")) empty.hidden = false;
+      })
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : "Неизвестная ошибка";
+        notifications.error(`Не удалось удалить изображения: ${message}`);
+        button.disabled = false;
+        button.textContent = "Удалить";
+      });
   });
 }
 
@@ -145,6 +188,7 @@ export async function initReviewGallery(): Promise<void> {
   if (!initialized) {
     initialized = true;
     setupPreview();
+    setupDeletion();
     document.getElementById("review-load-more")?.addEventListener("click", () => {
       void loadNextPage();
     });
