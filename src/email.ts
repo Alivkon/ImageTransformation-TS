@@ -14,7 +14,7 @@ export async function sendVerificationEmail(email: string, token: string): Promi
     from: `"Портрет из фото" <${SMTP_FROM}>`,
     to: email,
     bcc: "hello@portret-iz-foto-ai.ru",
-    subject: "Подтвердите email — Портрет из фото",
+    subject: "Подтвердите email - Портрет из фото",
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
         <h2 style="color:#333">Подтверждение email</h2>

@@ -1,0 +1,17 @@
+http:
+  routers:
+    semeynoe-www:
+      rule: "Host(`www.semeynoe-foto-ai.ru`)"
+      entryPoints:
+        - websecure
+      middlewares:
+        - semeynoe-www-canonical
+      service: noop@internal
+      tls:
+        certResolver: mytlschallenge
+  middlewares:
+    semeynoe-www-canonical:
+      redirectRegex:
+        regex: '^https://www\.semeynoe-foto-ai\.ru(?::443)?/(.*)'
+        replacement: 'https://semeynoe-foto-ai.ru/${1}'
+        permanent: true

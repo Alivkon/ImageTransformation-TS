@@ -149,6 +149,14 @@ export async function startWebServer(bot: Bot): Promise<void> {
   await fastify.register(formbody);
   await fastify.register(multipart);
 
+  fastify.addHook("onSend", async (_req, reply, payload) => {
+    const contentType = String(reply.getHeader("content-type") ?? "");
+    if (contentType.startsWith("text/html")) {
+      reply.header("Link", '</llms.txt>; rel="describedby"; type="text/markdown"');
+    }
+    return payload;
+  });
+
   // ── Рендеринг страниц из content/ с подстановкой плейсхолдеров (Решение 8) ──
   interface TemplateContext {
     selfOrigin: string;
@@ -207,7 +215,13 @@ export async function startWebServer(bot: Bot): Promise<void> {
       return;
     }
     if (cls.kind !== "landing") return;
-    if (pathname === "/" || pathname === "/robots.txt" || pathname === "/sitemap.xml") return;
+    if (
+      pathname === "/" ||
+      pathname === "/robots.txt" ||
+      pathname === "/sitemap.xml" ||
+      pathname === "/llms.txt" ||
+      pathname === "/llms.md"
+    ) return;
     if (ASSET_PATHS.has(pathname)) return;
     await reply.code(404).type("text/plain").send("Not Found");
   });
@@ -270,6 +284,19 @@ export async function startWebServer(bot: Bot): Promise<void> {
     }
     return reply.type("text/html; charset=utf-8").send(html);
   });
+
+  // llms.txt is the standard discovery URL; llms.md is kept as a convenient
+  // Markdown alias. Both are rendered from one source to prevent content drift.
+  for (const url of ["/llms.txt", "/llms.md"]) {
+    fastify.get(url, (req, reply) => {
+      const cls = classifyHost(req.headers.host);
+      const body = rendered("llms.md", pageContext(cls));
+      if (body === null) {
+        return reply.code(404).type("text/plain").send("Not Found");
+      }
+      return reply.type("text/markdown; charset=utf-8").send(body);
+    });
+  }
 
   // Информационные и служебные страницы — только основной домен
   // (доступ с тематических доменов отсечён host-gate хуком).
