@@ -5,7 +5,6 @@ import { getReviewGenerationsBySources } from "../database.js";
 import { requireMediaReviewer } from "./auth.js";
 import { createSignedMediaPath } from "./mediaRoute.js";
 
-const PAGE_SIZE = 10;
 const UPLOADS_DIR = path.resolve(__dirname, "../../uploads");
 const SOURCE_PATTERN = /^(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})_([a-f0-9-]+)_src\.jpg$/i;
 
@@ -48,15 +47,12 @@ export function registerReviewRoutes(fastify: FastifyInstance): void {
       const reviewer = await requireMediaReviewer(req, reply);
       if (!reviewer) return;
 
-      const page = Math.max(0, parseInt(req.query.page ?? "0", 10) || 0);
       const allPairs = scanLocalPairs();
-      const pagePairs = allPairs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
       const rows = await getReviewGenerationsBySources(
-        pagePairs.map((pair) => pair.sourceFilename),
+        allPairs.map((pair) => pair.sourceFilename),
       );
       const rowsBySource = new Map(rows.map((row) => [row.source_file_id, row]));
-      const hasMore = allPairs.length > (page + 1) * PAGE_SIZE;
-      const items = pagePairs.flatMap((pair) => {
+      const items = allPairs.flatMap((pair) => {
         const row = rowsBySource.get(pair.sourceFilename);
         const sourceUrl = createSignedMediaPath(pair.sourceFilename);
         const resultUrl = createSignedMediaPath(pair.resultFilename);
@@ -78,7 +74,7 @@ export function registerReviewRoutes(fastify: FastifyInstance): void {
       });
 
       req.log.info(
-        { reviewerUserId: reviewer.user_id, page, ip: req.ip },
+        { reviewerUserId: reviewer.user_id, itemCount: items.length, ip: req.ip },
         "media review gallery viewed",
       );
 
@@ -86,8 +82,8 @@ export function registerReviewRoutes(fastify: FastifyInstance): void {
         .header("Cache-Control", "private, no-store")
         .send({
           items,
-          has_more: hasMore,
-          next_page: hasMore ? page + 1 : null,
+          has_more: false,
+          next_page: null,
         });
     },
   );
