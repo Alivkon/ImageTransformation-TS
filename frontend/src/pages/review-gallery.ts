@@ -51,15 +51,15 @@ function card(item: ReviewGeneration): string {
       <div class="review-pair">
         <figure>
           <figcaption>Было</figcaption>
-          <a href="${item.source_url}" target="_blank" rel="noopener">
+          <button type="button" class="review-image-button" data-review-image="${item.source_url}" aria-label="Открыть исходное изображение">
             <img src="${item.source_url}" alt="Исходное изображение" loading="lazy">
-          </a>
+          </button>
         </figure>
         <figure>
           <figcaption>Стало</figcaption>
-          <a href="${item.result_url}" target="_blank" rel="noopener">
+          <button type="button" class="review-image-button" data-review-image="${item.result_url}" aria-label="Открыть результат">
             <img src="${item.result_url}" alt="Результат генерации" loading="lazy">
-          </a>
+          </button>
         </figure>
       </div>
       <div class="review-prompt">
@@ -67,6 +67,40 @@ function card(item: ReviewGeneration): string {
         <p>${escapeHtml(prompt)}</p>
       </div>
     </article>`;
+}
+
+function setupPreview(): void {
+  const preview = document.getElementById("review-preview");
+  const image = document.getElementById("review-preview-image") as HTMLImageElement | null;
+  const closeButton = document.getElementById("review-preview-close") as HTMLButtonElement | null;
+  const grid = document.getElementById("review-gallery-grid");
+  if (!preview || !image || !closeButton || !grid) return;
+
+  const close = (): void => {
+    preview.classList.remove("active");
+    preview.setAttribute("aria-hidden", "true");
+    image.removeAttribute("src");
+    document.body.style.overflow = "";
+  };
+
+  grid.addEventListener("click", (event) => {
+    const button = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>(
+      "[data-review-image]",
+    );
+    const src = button?.dataset["reviewImage"];
+    if (!src) return;
+
+    image.src = src;
+    preview.classList.add("active");
+    preview.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    closeButton.focus();
+  });
+
+  closeButton.addEventListener("click", close);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && preview.classList.contains("active")) close();
+  });
 }
 
 async function loadNextPage(): Promise<void> {
@@ -110,6 +144,7 @@ export async function initReviewGallery(): Promise<void> {
 
   if (!initialized) {
     initialized = true;
+    setupPreview();
     document.getElementById("review-load-more")?.addEventListener("click", () => {
       void loadNextPage();
     });
