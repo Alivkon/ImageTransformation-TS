@@ -28,9 +28,20 @@ export async function generateImage(imageUrl: string, prompt: string): Promise<B
     Authorization: `Bearer ${KIE_API_KEY.trim()}`,
     "Content-Type": "application/json",
   };
+
+  // Previous model configuration, kept for a quick rollback:
+  // const payload = {
+  //   model: "google/nano-banana",
+  //   input: { prompt, imageUrls: [imageUrl], resolution: "1K" },
+  // };
   const payload = {
-    model: "google/nano-banana",
-    input: { prompt, imageUrls: [imageUrl], resolution: "1K" },
+    model: "google/nano-banana-edit",
+    input: {
+      prompt,
+      image_urls: [imageUrl],
+      output_format: "jpeg",
+      aspect_ratio: "auto",
+    },
   };
 
   const createResp = await fetch(API_URL, {
